@@ -4,3 +4,6 @@
 2026-01-21-15-59: {'overall': {'trainable': '345.25K', 'non_trainable': '0', 'total': '345.25K'}, 'model': {'trainable': '345.25K', 'non_trainable': '0', 'total': '345.25K'}}
 2026-01-21-15-59: etth1: start training...
 2026-01-21-16-49: Training done, time: 2962.98
+2026-01-21-17-29: {'overall': {'trainable': '345.25K', 'non_trainable': '0', 'total': '345.25K'}, 'model': {'trainable': '345.25K', 'non_trainable': '0', 'total': '345.25K'}}
+2026-01-21-17-29: Begin to sample...
+2026-01-21-17-38: Sampling done, time: 529.71
