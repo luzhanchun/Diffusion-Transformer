@@ -22,11 +22,13 @@ def parse_args():
                         help='use tensorboard for logging')
 
     # args for random
-
+    #当该参数在命令行中出现时，将对应变量设为 True；未出现时，默认为 False。
+    #固定cuda的随机数种子使结果可复现
     parser.add_argument('--cudnn_deterministic', action='store_true', default=False,
                         help='set cudnn.deterministic True')
     parser.add_argument('--seed', type=int, default=12345, 
                         help='seed for initializing training.')
+    #DDP将模型并行化到多台机器
     parser.add_argument('--gpu', type=int, default=None,
                         help='GPU id to use. If given, only the specific gpu will be'
                         ' used, and ddp will be disabled')
@@ -43,6 +45,9 @@ def parse_args():
     parser.add_argument('--pred_len', type=int, default=0, help='Length of Predictions.')
     
     # args for modify config
+    # nargs 用于指定该参数在命令行中可以/需要接收的参数个数。
+    # argparse.REMAINDER 是一个特殊值，表示：从该参数开始，后续所有命令行 token（包括以 - 或 -- 开头的内容）都视为该参数的值。
+    #返回一个列表args.opts == ['ls', '-l', '/home']
     parser.add_argument('opts', help='Modify config options using the command-line',
                         default=None, nargs=argparse.REMAINDER)  
 
