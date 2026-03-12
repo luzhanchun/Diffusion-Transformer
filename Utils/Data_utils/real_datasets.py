@@ -11,6 +11,15 @@ from Utils.masking_utils import noise_mask
 
 
 class CustomDataset(Dataset):
+    # params:
+    #   name: etth
+    #   proportion: 1.0  # Set to rate < 1 if training conditional generation
+    #   data_root: ./Data/datasets/ETTh.csv
+    #   window: 24  # seq_length
+    #   save2npy: True
+    #   neg_one_to_one: True
+    #   seed: 123
+    #   period: train
     def __init__(
         self, 
         name,
@@ -34,17 +43,22 @@ class CustomDataset(Dataset):
             assert ~(predict_length is not None or missing_ratio is not None), ''
         self.name, self.pred_len, self.missing_ratio = name, predict_length, missing_ratio
         self.style, self.distribution, self.mean_mask_length = style, distribution, mean_mask_length
+        #从csv读取数据 返回的数据已经初始化MinMaxScaler()并使用.fit计算归一化所需统计量，并没有改变数据
         self.rawdata, self.scaler = self.read_data(data_root, self.name)
         self.dir = os.path.join(output_dir, 'samples')
         os.makedirs(self.dir, exist_ok=True)
 
         self.window, self.period = window, period
+        #17420条数据，7维
         self.len, self.var_num = self.rawdata.shape[0], self.rawdata.shape[-1]
+        #17420-24+1
         self.sample_num_total = max(self.len - self.window + 1, 0)
         self.save2npy = save2npy
         self.auto_norm = neg_one_to_one
-
+        #data （17420，7）
+        #使用transform() 对数据归一化到0-1，然后变换到-1-1
         self.data = self.__normalize(self.rawdata)
+        #对data进行滑动窗口切分，划分数据集 proportion=1时，train是data按照滑动窗口切分后的结果shape=(17397,24,7)
         train, inference = self.__getsamples(self.data, proportion, seed)
 
         self.samples = train if period == 'train' else inference
@@ -57,24 +71,30 @@ class CustomDataset(Dataset):
                 self.masking = masks.astype(bool)
             else:
                 raise NotImplementedError()
+        #self.sample_num=17397
         self.sample_num = self.samples.shape[0]
 
     def __getsamples(self, data, proportion, seed):
+        #x.shape= (17397,24,7)
         x = np.zeros((self.sample_num_total, self.window, self.var_num))
+        #对二维时间序列data进行长度为self.window的滑动窗口切分，生成17397个样本，每个样本维度为(24, 7)。
         for i in range(self.sample_num_total):
             start = i
             end = i + self.window
             x[i, :, :] = data[start:end, :]
-
+        #proportion = 1 等价于train_data=x,test_data=empty
         train_data, test_data = self.divide(x, proportion, seed)
-
+        #储存原始数据及其归一化形式
         if self.save2npy:
+            #非条件生成就是1
             if 1 - proportion > 0:
                 np.save(os.path.join(self.dir, f"{self.name}_ground_truth_{self.window}_test.npy"), self.unnormalize(test_data))
+            # 从-1~1变换到0~1，然后执行归一化的逆操作
             np.save(os.path.join(self.dir, f"{self.name}_ground_truth_{self.window}_train.npy"), self.unnormalize(train_data))
             if self.auto_norm:
                 if 1 - proportion > 0:
                     np.save(os.path.join(self.dir, f"{self.name}_norm_truth_{self.window}_test.npy"), unnormalize_to_zero_to_one(test_data))
+                #从-1~1变换到0~1
                 np.save(os.path.join(self.dir, f"{self.name}_norm_truth_{self.window}_train.npy"), unnormalize_to_zero_to_one(train_data))
             else:
                 if 1 - proportion > 0:
@@ -108,6 +128,7 @@ class CustomDataset(Dataset):
     
     @staticmethod
     def divide(data, ratio, seed=2023):
+        # data.shape= (17397,24,7)
         size = data.shape[0]
         # Store the state of the RNG to restore later.
         st0 = np.random.get_state()
@@ -130,7 +151,9 @@ class CustomDataset(Dataset):
     def read_data(filepath, name=''):
         """Reads a single .csv
         """
+        # header = 0表示：第0行作为列名
         df = pd.read_csv(filepath, header=0)
+        #删除第一列
         if name == 'etth':
             df.drop(df.columns[0], axis=1, inplace=True)
         data = df.values
@@ -162,10 +185,12 @@ class CustomDataset(Dataset):
             x = self.samples[ind, :, :]  # (seq_length, feat_dim) array
             m = self.masking[ind, :, :]  # (seq_length, feat_dim) boolean array
             return torch.from_numpy(x).float(), torch.from_numpy(m)
+        #self.samples.shape = (17397, 24, 7)
         x = self.samples[ind, :, :]  # (seq_length, feat_dim) array
-        return torch.from_numpy(x).float()
+        return torch.from_numpy(x).float() #把 NumPy 数组转换为 PyTorch 张量并指定数据类型
 
     def __len__(self):
+        # self.sample_num=17397
         return self.sample_num
     
 

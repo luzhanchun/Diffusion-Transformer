@@ -150,14 +150,28 @@ def format_seconds(seconds):
         ft = '{:d}d:{:02d}h:{:02d}m:{:02d}s'.format(d, h, m, s)
 
     return ft
-
+#从配置实例化dataset
 def instantiate_from_config(config):
+    # target: Utils.Data_utils.real_datasets.CustomDataset
+    # params:
+    #   name: etth
+    #   proportion: 1.0  # Set to rate < 1 if training conditional generation
+    #   data_root: ./Data/datasets/ETTh.csv
+    #   window: 24  # seq_length
+    #   save2npy: True
+    #   neg_one_to_one: True
+    #   seed: 123
+    #   period: train
     if config is None:
         return None
     if not "target" in config:
         raise KeyError("Expected key `target` to instantiate.")
+    #module=Utils.Data_utils.real_datasets  cls=CustomDataset
     module, cls = config["target"].rsplit(".", 1)
+    #import_module是Python的动态导入模块函数 getattr()从模块中获取类
+    #根据字符串动态导入模块并实例化类
     cls = getattr(importlib.import_module(module, package=None), cls)
+    #使用配置参数实例化该类  返回的是类CustomDataset的实例化对象
     return cls(**config.get("params", dict()))
 
 def class_from_string(class_name):

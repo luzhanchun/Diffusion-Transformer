@@ -44,6 +44,7 @@ class Trainer(object):
         ema_update_every = config['solver']['ema']['update_interval']
 
         self.opt = Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=start_lr, betas=[0.9, 0.96])
+        # 指数移动平均（Exponential Moving Average, EMA）稳定训练
         self.ema = EMA(self.model, beta=ema_decay, update_every=ema_update_every).to(self.device)
 
         sc_cfg = config['solver']['scheduler']
@@ -143,20 +144,24 @@ class Trainer(object):
         if self.logger is not None:
             self.logger.log_info('Training done, time: {:.2f}'.format(time.time() - tic))
 
+    # 采样trainer.sample(num=17397,size_every=2001,shape=[24,7])
     def sample(self, num, size_every, shape=None, model_kwargs=None, cond_fn=None):
         if self.logger is not None:
             tic = time.time()
             self.logger.log_info('Begin to sample...')
         samples = np.empty([0, shape[0], shape[1]])
+        #9=17397/2001+1
         num_cycle = int(num // size_every) + 1
 
         for _ in range(num_cycle):
+            #self.ema.ema_model表示使用EMA权重的模型,生成多变量时间序列（multivariate time series, MTS)
             sample = self.ema.ema_model.generate_mts(batch_size=size_every, model_kwargs=model_kwargs, cond_fn=cond_fn)
             samples = np.row_stack([samples, sample.detach().cpu().numpy()])
             torch.cuda.empty_cache()
 
         if self.logger is not None:
             self.logger.log_info('Sampling done, time: {:.2f}'.format(time.time() - tic))
+        #samples.shape=(num_cycle*size_every, 24,7)
         return samples
 
     def restore(self, raw_dataloader, shape=None, coef=1e-1, stepsize=1e-1, sampling_steps=50):
