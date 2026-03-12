@@ -1,0 +1,3 @@
+2026-03-12-10-46: {'overall': {'trainable': '345.25K', 'non_trainable': '0', 'total': '345.25K'}, 'model': {'trainable': '345.25K', 'non_trainable': '0', 'total': '345.25K'}}
+2026-03-12-10-46: Begin to sample...
+2026-03-12-10-55: Sampling done, time: 524.04
