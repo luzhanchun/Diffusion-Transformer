@@ -112,7 +112,7 @@ def main():
         if dataset.auto_norm:
             #从-1~1变换到0-1
             samples = unnormalize_to_zero_to_one(samples)
-            # samples = dataset.scaler.inverse_transform(samples.reshape(-1, samples.shape[-1])).reshape(samples.shape)
+            samples = dataset.scaler.inverse_transform(samples.reshape(-1, samples.shape[-1])).reshape(samples.shape)
         np.save(os.path.join(args.save_dir, f'ddpm_fake_{args.name}.npy'), samples)
 
 if __name__ == '__main__':
