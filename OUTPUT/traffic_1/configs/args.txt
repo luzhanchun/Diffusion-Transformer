@@ -1,0 +1,63 @@
+==> torch version: 2.0.1+cu117
+==> cudnn version: 8907
+==> Cmd:
+['main.py', '--name', 'traffic_1', '--config_file', 'Config/traffic.yaml', '--tensorboard', '--gpu', '0', '--train']
+==> args:
+  config_file: Config/traffic.yaml
+  cudnn_deterministic: False
+  gpu: 0
+  milestone: 10
+  missing_ratio: 0.0
+  mode: infill
+  name: traffic_1
+  opts: []
+  output: OUTPUT
+  pred_len: 0
+  sample: 0
+  save_dir: OUTPUT/traffic_1
+  seed: 12345
+  tensorboard: True
+  traffic: False
+  train: True
+==> torch version: 2.0.1+cu117
+==> cudnn version: 8907
+==> Cmd:
+['main.py', '--name', 'traffic_1', '--config_file', 'Config/traffic.yaml', '--tensorboard', '--gpu', '0', '--train']
+==> args:
+  config_file: Config/traffic.yaml
+  cudnn_deterministic: False
+  gpu: 0
+  milestone: 10
+  missing_ratio: 0.0
+  mode: infill
+  name: traffic_1
+  opts: []
+  output: OUTPUT
+  pred_len: 0
+  sample: 0
+  save_dir: OUTPUT/traffic_1
+  seed: 12345
+  tensorboard: True
+  traffic: False
+  train: True
+==> torch version: 2.0.1+cu117
+==> cudnn version: 8907
+==> Cmd:
+['main.py', '--name', 'traffic_1', '--config_file', 'Config/traffic.yaml', '--gpu', '0', '--sample', '0', '--milestone', '10', '--traffic']
+==> args:
+  config_file: Config/traffic.yaml
+  cudnn_deterministic: False
+  gpu: 0
+  milestone: 10
+  missing_ratio: 0.0
+  mode: infill
+  name: traffic_1
+  opts: []
+  output: OUTPUT
+  pred_len: 0
+  sample: 0
+  save_dir: OUTPUT/traffic_1
+  seed: 12345
+  tensorboard: False
+  traffic: True
+  train: False

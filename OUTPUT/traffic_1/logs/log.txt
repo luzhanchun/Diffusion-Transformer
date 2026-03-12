@@ -1,0 +1,9 @@
+2026-03-12-16-57: using tensorboard
+2026-03-12-16-57: {'overall': {'trainable': '340.53K', 'non_trainable': '0', 'total': '340.53K'}, 'model': {'trainable': '340.53K', 'non_trainable': '0', 'total': '340.53K'}}
+2026-03-12-16-57: traffic_1: start training...
+2026-03-12-17-10: using tensorboard
+2026-03-12-17-10: {'overall': {'trainable': '340.53K', 'non_trainable': '0', 'total': '340.53K'}, 'model': {'trainable': '340.53K', 'non_trainable': '0', 'total': '340.53K'}}
+2026-03-12-17-10: traffic_1: start training...
+2026-03-12-17-40: Training done, time: 1783.87
+2026-03-12-17-59: {'overall': {'trainable': '340.53K', 'non_trainable': '0', 'total': '340.53K'}, 'model': {'trainable': '340.53K', 'non_trainable': '0', 'total': '340.53K'}}
+2026-03-12-17-59: Begin to sample...
