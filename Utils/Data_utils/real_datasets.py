@@ -152,14 +152,35 @@ class CustomDataset(Dataset):
         """Reads a single .csv
         """
         # header = 0表示：第0行作为列名
-        df = pd.read_csv(filepath, header=0)
+        df = pd.read_csv(filepath, dtype=float, header=0)
         #删除第一列
         if name == 'etth':
             df.drop(df.columns[0], axis=1, inplace=True)
-        data = df.values
-        scaler = MinMaxScaler()
-        scaler = scaler.fit(data)
-        return data, scaler
+        if name == 'traffic':
+            df.drop(df.columns[0], axis=1, inplace=True)
+        data = df.values #numpy.ndarray
+        if name == 'traffic':
+            # 1 取出列
+            pkt_len = data[:, 0]
+            iat = data[:, 1]
+            dir = data[:, 2]
+            # 2 方向感知长度编码+clip处理
+            len_signed = pkt_len * dir
+            len_signed = np.clip(len_signed, -1500, 1500)
+            #统计学术语，如果将一组数据从小到大排序，并计算相应的累计百分位，则某一百分位所对应数据的值就称为这一百分位的百分位数。可表示为：一组n个观测值按数值大小排列。如，处于p%位置的值称第p百分位数。
+            clip_val = np.percentile(iat, 98)
+            iat = np.clip(iat, 0, clip_val)
+            # 3 log变换
+            iat = np.log1p(iat)
+            # 4 写回原数组
+            processed_data = np.stack([len_signed, iat], axis=1)
+            scaler = MinMaxScaler()
+            scaler = scaler.fit(processed_data)
+            return processed_data, scaler
+        else:
+            scaler = MinMaxScaler()
+            scaler = scaler.fit(data)
+            return data, scaler
     
     def mask_data(self, seed=2023):
         masks = np.ones_like(self.samples)

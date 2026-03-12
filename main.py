@@ -51,7 +51,7 @@ def parse_args():
     #此参数用来使用命令行修改配置文件yml中的参数
     parser.add_argument('opts', help='Modify config options using the command-line',
                         default=None, nargs=argparse.REMAINDER)  
-
+    parser.add_argument('--traffic', action='store_true', default=False, help='traffic generate.')
     args = parser.parse_args()
     #OUTPUT/etth1
     args.save_dir = os.path.join(args.output, f'{args.name}')
@@ -112,7 +112,12 @@ def main():
         if dataset.auto_norm:
             #从-1~1变换到0-1
             samples = unnormalize_to_zero_to_one(samples)
-            samples = dataset.scaler.inverse_transform(samples.reshape(-1, samples.shape[-1])).reshape(samples.shape)
+            if args.traffic:
+                samples = dataset.scaler.inverse_transform(samples.reshape(-1, samples.shape[-1])).reshape(samples.shape)
+            else:
+                #iat = np.expm1(iat)
+                #取整和len剪裁
+                samples = dataset.scaler.inverse_transform(samples.reshape(-1, samples.shape[-1])).reshape(samples.shape)
         np.save(os.path.join(args.save_dir, f'ddpm_fake_{args.name}.npy'), samples)
 
 if __name__ == '__main__':
