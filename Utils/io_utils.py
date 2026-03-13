@@ -206,3 +206,57 @@ def get_model_buffer(model):
         if k not in params_:
             buffers_[k] = state_dict[k]
     return buffers_
+
+#############---traffic_io------#########
+#samples.shape=(num,window,dim)
+
+
+def stitch_windows(samples):
+
+    num_windows, window_size, dim = samples.shape
+    seq_len = num_windows + window_size - 1
+    sequence = torch.zeros(seq_len, dim)
+    count = torch.zeros(seq_len, 1)
+
+    for i in range(num_windows):
+
+        sequence[i:i+window_size] += samples[i]
+
+        count[i:i+window_size] += 1
+
+    sequence = sequence / count
+    return sequence
+
+def postprocess_data(samples):     #shape=(num,window,dim)
+    #data.shape=(seq_len, dim)
+    #data = stitch_windows(samples)
+    data = samples.reshape(-1,samples.shape[-1])
+    data = data.copy()
+    # -----------------------
+    # 1. 处理第一列 pkt_len
+    # -----------------------
+    pkt_len = data[:, 0]
+
+    # clip到[-1480, 1480]
+    pkt_len = np.clip(pkt_len, -1480, 1480)
+
+    # 区间替换
+    mask_pos = (pkt_len >= 0) & (pkt_len <= 30)
+    mask_neg = (pkt_len >= -30) & (pkt_len < 0)
+
+    pkt_len[mask_pos] = 20
+    pkt_len[mask_neg] = -20
+
+    data[:, 0] = pkt_len
+
+    # -----------------------
+    # 2. 第二列 log1p(iat) -> iat
+    # -----------------------
+    data[:, 1] = np.expm1(data[:, 1])
+
+    # -----------------------
+    # 3. 四舍五入并转整数
+    # -----------------------
+    data = np.rint(data).astype(int)
+
+    return data

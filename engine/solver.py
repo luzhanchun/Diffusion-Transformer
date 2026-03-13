@@ -33,6 +33,7 @@ class Trainer(object):
         self.dataloader = dataloader['dataloader']
         self.step = 0
         self.milestone = 0
+        self.num_cycle = args.num_cycles
         self.args, self.config = args, config
         self.logger = logger
 
@@ -151,9 +152,9 @@ class Trainer(object):
             self.logger.log_info('Begin to sample...')
         samples = np.empty([0, shape[0], shape[1]])
         #9=17397/2001+1
-        num_cycle = int(num // size_every) + 1
+        #num_cycle = int(num // size_every) + 1
 
-        for _ in range(num_cycle):
+        for _ in range(self.num_cycle):
             #self.ema.ema_model表示使用EMA权重的模型,生成多变量时间序列（multivariate time series, MTS)
             sample = self.ema.ema_model.generate_mts(batch_size=size_every, model_kwargs=model_kwargs, cond_fn=cond_fn)
             samples = np.row_stack([samples, sample.detach().cpu().numpy()])

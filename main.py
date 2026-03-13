@@ -7,7 +7,7 @@ from engine.logger import Logger
 from engine.solver import Trainer
 from Data.build_dataloader import build_dataloader, build_dataloader_cond
 from Models.interpretable_diffusion.model_utils import unnormalize_to_zero_to_one
-from Utils.io_utils import load_yaml_config, seed_everything, merge_opts_to_config, instantiate_from_config
+from Utils.io_utils import load_yaml_config, seed_everything, merge_opts_to_config, instantiate_from_config, postprocess_data
 
 
 def parse_args():
@@ -43,7 +43,11 @@ def parse_args():
 
     parser.add_argument('--missing_ratio', type=float, default=0., help='Ratio of Missing Values.')
     parser.add_argument('--pred_len', type=int, default=0, help='Length of Predictions.')
-    
+    parser.add_argument('--traffic', action='store_true', default=False, help='traffic generate.')
+    # 采样num_cycles次，每次采样size_every条样本
+    parser.add_argument('--num_cycles', type=int, default=5)
+    parser.add_argument('--size_every', type=int, default=2000)
+
     # args for modify config
     # nargs 用于指定该参数在命令行中可以/需要接收的参数个数。
     # argparse.REMAINDER 是一个特殊值，表示：从该参数开始，后续所有命令行 token（包括以 - 或 -- 开头的内容）都视为该参数的值。
@@ -51,15 +55,15 @@ def parse_args():
     #此参数用来使用命令行修改配置文件yml中的参数
     parser.add_argument('opts', help='Modify config options using the command-line',
                         default=None, nargs=argparse.REMAINDER)  
-    parser.add_argument('--traffic', action='store_true', default=False, help='traffic generate.')
+
     args = parser.parse_args()
     #OUTPUT/etth1
     args.save_dir = os.path.join(args.output, f'{args.name}')
-
     return args
 
 def main():
     args = parse_args()
+    print(args)
     #随机数种子
     if args.seed is not None:
         seed_everything(args.seed)
@@ -108,17 +112,19 @@ def main():
         dataset = dataloader_info['dataset']
         #采样trainer.sample(num=17397,size_every=2001,shape=[24,7])  size_every:扩散模型一次生成 size_every 条样本
         #返回值#samples.shape=(num_cycle*size_every=18009, 24,7)
-        samples = trainer.sample(num=len(dataset), size_every=2001, shape=[dataset.window, dataset.var_num])
+        samples = trainer.sample(num=len(dataset), size_every=args.size_every, shape=[dataset.window, dataset.var_num])
         if dataset.auto_norm:
             #从-1~1变换到0-1
             samples = unnormalize_to_zero_to_one(samples)
             if args.traffic:
                 samples = dataset.scaler.inverse_transform(samples.reshape(-1, samples.shape[-1])).reshape(samples.shape)
+                #samples.shape=(num,window,dim)
+                fake_data = postprocess_data(samples)
+                np.save(os.path.join(args.save_dir, f'ddpm_fake_{args.name}.npy'), fake_data)
             else:
-                #iat = np.expm1(iat)
-                #取整和len剪裁
                 samples = dataset.scaler.inverse_transform(samples.reshape(-1, samples.shape[-1])).reshape(samples.shape)
-        np.save(os.path.join(args.save_dir, f'ddpm_fake_{args.name}.npy'), samples)
+        if not args.traffic:
+            np.save(os.path.join(args.save_dir, f'ddpm_fake_{args.name}.npy'), samples)
 
 if __name__ == '__main__':
     main()
