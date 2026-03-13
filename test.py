@@ -16,5 +16,15 @@ if __name__ == '__main__':
     data_3dim = np.concatenate([data, third_col.reshape(-1, 1)], axis=1)
 
     df = pd.DataFrame(data_3dim, columns=["pkg_len", "pkg_iat","pkt_dir"])
-    df.to_csv(os.path.join(path,"traffic_feature_generated.csv"), index=False)
+    df.to_csv(os.path.join(path,"traffic_feature_generated_3dim.csv"), index=False)
     print("post_process complete")
+
+
+    # path = os.path.join("OUTPUT","traffic_1")
+    # data = np.load(os.path.join(path,"ddpm_fake_traffic_1.npy"))
+    # print(data.shape,data.dtype)
+    #
+    #
+    # df = pd.DataFrame(data, columns=["pkg_len_dir", "pkg_iat"])
+    # df.to_csv(os.path.join(path,"traffic_feature_generated_2dim.csv"), index=False)
+    # print("post_process complete")
