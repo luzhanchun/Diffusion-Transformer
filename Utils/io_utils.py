@@ -1,5 +1,7 @@
 import os
 import sys
+
+import pandas as pd
 import yaml
 import json
 import torch
@@ -241,8 +243,8 @@ def postprocess_data(samples):     #shape=(num,window,dim)
     pkt_len = np.clip(pkt_len, -1480, 1480)
 
     # 区间替换
-    mask_pos = (pkt_len >= 0) & (pkt_len <= 30)
-    mask_neg = (pkt_len >= -30) & (pkt_len < 0)
+    mask_pos = (pkt_len >= 0) & (pkt_len <= 60)
+    mask_neg = (pkt_len >= -60) & (pkt_len < 0)
 
     pkt_len[mask_pos] = 20
     pkt_len[mask_neg] = -20
@@ -260,3 +262,16 @@ def postprocess_data(samples):     #shape=(num,window,dim)
     data = np.rint(data).astype(int)
 
     return data
+def save_to_csv(save_dir, fake_data):
+    feature_dir = os.path.join(save_dir, 'features')
+    os.makedirs(feature_dir, exist_ok=True)
+    # fake_data: shape (seq_len, 2) type:int64
+    #构造第三列
+    third_col = np.where(fake_data[:, 0] > 0, 1, -1)
+    # 第一列取绝对值
+    fake_data[:, 0] = np.abs(fake_data[:, 0])
+    # 扩展为 (seq_len, 3)
+    data_3dim = np.concatenate([fake_data, third_col.reshape(-1, 1)], axis=1)
+    df = pd.DataFrame(data_3dim, columns=["pkg_len", "pkg_iat","pkt_dir"])
+    df.to_csv(os.path.join(feature_dir,"data_i.csv"), index=False)
+    print("Sampling batch number:i ······· save to data_i.csv")

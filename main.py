@@ -7,7 +7,8 @@ from engine.logger import Logger
 from engine.solver import Trainer
 from Data.build_dataloader import build_dataloader, build_dataloader_cond
 from Models.interpretable_diffusion.model_utils import unnormalize_to_zero_to_one
-from Utils.io_utils import load_yaml_config, seed_everything, merge_opts_to_config, instantiate_from_config, postprocess_data
+from Utils.io_utils import load_yaml_config, seed_everything, merge_opts_to_config, instantiate_from_config, \
+    postprocess_data, save_to_csv
 
 
 def parse_args():
@@ -45,9 +46,9 @@ def parse_args():
     parser.add_argument('--pred_len', type=int, default=0, help='Length of Predictions.')
     parser.add_argument('--traffic', action='store_true', default=False, help='traffic generate.')
     # 采样num_cycles次，每次采样size_every条样本
+    #parser.add_argument('--sample_num', type=int, default=3)
     parser.add_argument('--num_cycles', type=int, default=5)
     parser.add_argument('--size_every', type=int, default=2000)
-
     # args for modify config
     # nargs 用于指定该参数在命令行中可以/需要接收的参数个数。
     # argparse.REMAINDER 是一个特殊值，表示：从该参数开始，后续所有命令行 token（包括以 - 或 -- 开头的内容）都视为该参数的值。
@@ -94,7 +95,7 @@ def main():
 
     if args.train: #训练模式并保存
         trainer.train()
-    #条件生成——插值和预测任务,先不用管
+    #条件生成——插值和预测,先不用管
     elif args.sample == 1 and args.mode in ['infill', 'predict']:
         trainer.load(args.milestone)
         dataloader, dataset = test_dataloader_info['dataloader'], test_dataloader_info['dataset']
@@ -112,7 +113,7 @@ def main():
         dataset = dataloader_info['dataset']
         #采样trainer.sample(num=17397,size_every=2001,shape=[24,7])  size_every:扩散模型一次生成 size_every 条样本
         #返回值#samples.shape=(num_cycle*size_every=18009, 24,7)
-        samples = trainer.sample(num=len(dataset), size_every=args.size_every, shape=[dataset.window, dataset.var_num])
+        samples = trainer.sample(num_cycles=args.num_cycles, size_every=args.size_every, shape=[dataset.window, dataset.var_num])
         if dataset.auto_norm:
             #从-1~1变换到0-1
             samples = unnormalize_to_zero_to_one(samples)
@@ -120,7 +121,9 @@ def main():
                 samples = dataset.scaler.inverse_transform(samples.reshape(-1, samples.shape[-1])).reshape(samples.shape)
                 #samples.shape=(num,window,dim)
                 fake_data = postprocess_data(samples)
-                np.save(os.path.join(args.save_dir, f'ddpm_fake_{args.name}.npy'), fake_data)
+                #fake_data.shape=(seq_len, dim)
+                save_to_csv(args.save_dir, fake_data)
+                #np.save(os.path.join(args.save_dir, f'ddpm_fake_{args.name}.npy'), fake_data)
             else:
                 samples = dataset.scaler.inverse_transform(samples.reshape(-1, samples.shape[-1])).reshape(samples.shape)
         if not args.traffic:

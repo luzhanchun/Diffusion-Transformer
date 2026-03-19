@@ -1,30 +1,49 @@
 import os
-import pandas as pd
-import numpy as np
+import sys
+import time
+import signal
+import subprocess
+from pathlib import Path
 
+class Traffic:
+    def __init__(self):
+        self.p = None
 
-if __name__ == '__main__':
-    path = os.path.join("OUTPUT","traffic_1")
-    data = np.load(os.path.join(path,"ddpm_fake_traffic_1.npy"))
-    print(data.shape,data.dtype)
+    def stop_child_group(self, timeout: float = 3.0):
+        if self.p.poll() is not None:
+            return
 
-    # data: shape (seq_len, 2)
-    third_col = np.where(data[:, 0] > 0, 1, -1)
-    # 第一列取绝对值
-    data[:, 0] = np.abs(data[:, 0])
-    # 扩展为 (seq_len, 3)
-    data_3dim = np.concatenate([data, third_col.reshape(-1, 1)], axis=1)
+        pgid = os.getpgid(self.p.pid)
+        os.killpg(pgid, signal.SIGTERM)
 
-    df = pd.DataFrame(data_3dim, columns=["pkg_len", "pkg_iat","pkt_dir"])
-    df.to_csv(os.path.join(path,"traffic_feature_generated_3dim.csv"), index=False)
-    print("post_process complete")
+        try:
+            self.p.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            os.killpg(pgid, signal.SIGKILL)
+            self.p.wait()
 
+    def open_child(self):
+        base_dir = Path(__file__).resolve().parent
+        child_script = base_dir / "child.py"
 
-    # path = os.path.join("OUTPUT","traffic_1")
-    # data = np.load(os.path.join(path,"ddpm_fake_traffic_1.npy"))
-    # print(data.shape,data.dtype)
-    #
-    #
-    # df = pd.DataFrame(data, columns=["pkg_len_dir", "pkg_iat"])
-    # df.to_csv(os.path.join(path,"traffic_feature_generated_2dim.csv"), index=False)
-    # print("post_process complete")
+        self.p = subprocess.Popen(
+            [sys.executable, str(child_script), "--count", "100"],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            preexec_fn=os.setsid,
+        )
+        print("Child started")
+
+    def save(self):
+        self.stop_child_group(3.0)
+        print("[main] child group stopped", flush=True)
+    def work(self):
+        for i in range(5):
+            time.sleep(1)
+            print("[main] working")
+        self.save()
+if __name__ == "__main__":
+    generator = Traffic()
+    generator.open_child()
+    generator.work()
