@@ -41,3 +41,6 @@
 2026-03-20-15-29: {'overall': {'trainable': '340.53K', 'non_trainable': '0', 'total': '340.53K'}, 'model': {'trainable': '340.53K', 'non_trainable': '0', 'total': '340.53K'}}
 2026-03-20-15-29: [WORK] À©É¢Ä£ĞÍ²ÉÑùÖĞ...
 2026-03-20-15-30: [INFO] ²ÉÑùÍê³É, time: 29.20
+2026-03-20-16-06: {'overall': {'trainable': '340.53K', 'non_trainable': '0', 'total': '340.53K'}, 'model': {'trainable': '340.53K', 'non_trainable': '0', 'total': '340.53K'}}
+2026-03-20-16-06: [WORK] æ‰©æ•£æ¨¡å‹é‡‡æ ·ä¸­...
+2026-03-20-16-06: [INFO] é‡‡æ ·å®Œæˆ, time: 7.75
