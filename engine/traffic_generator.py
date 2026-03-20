@@ -114,7 +114,6 @@ class TrafficGenerator:
         elif self.system == "Linux":
             self.p = subprocess.Popen(
                 [
-                "cmd", "/k",
                 sys.executable, str(child_script),
                  "--name", name,
                  "--config_file", config_file,
@@ -126,6 +125,8 @@ class TrafficGenerator:
                  "--size_every", str(size_every),
             ],
                 stdin=subprocess.DEVNULL,
+                # stdout=None,
+                # stderr=None,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 preexec_fn=os.setsid,
