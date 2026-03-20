@@ -28,7 +28,7 @@ if __name__ == "__main__":
     data_path = os.path.join("OUTPUT", "traffic_1","features")
     #伪装流量保存文件
     pcap_path = os.path.join("OUTPUT", "pcap", "background_traffic.pcap")
-    if os.path.exists(pcap_path):
+    if os.path.isfile(pcap_path):
         os.remove(pcap_path)
     generator = TrafficGenerator(args)
     #启动采样程序
