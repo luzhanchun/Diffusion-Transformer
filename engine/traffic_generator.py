@@ -125,10 +125,10 @@ class TrafficGenerator:
                  "--size_every", str(size_every),
             ],
                 stdin=subprocess.DEVNULL,
-                # stdout=None,
-                # stderr=None,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                stdout=None,
+                stderr=None,
+                # stdout=subprocess.DEVNULL,
+                # stderr=subprocess.DEVNULL,
                 preexec_fn=os.setsid,
             )
             print("模型采样已启动！")
@@ -151,10 +151,9 @@ class TrafficGenerator:
         # 确保目录存在
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         file_exists = os.path.isfile(filename)
-        print(file_exists)
         # append=True 表示追加写入，不覆盖原文件
         wrpcap(filename, self.packets, append=file_exists)
-        print(f"\n[INFO] Completed! 背景流量已保存至: {filename} (共{len(self.packets)} packets)")
+        print(f"[INFO] Completed! 背景流量已保存至: {filename} (共{len(self.packets)} packets)")
         if self.sample:
             if self.system == "Linux":
                 self.stop_child_group(3.0)
