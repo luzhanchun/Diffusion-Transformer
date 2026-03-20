@@ -30,6 +30,7 @@ class TrafficGenerator:
         self.dport = args.s_port
         self.host_type = args.host_type
         self.sample = args.sample
+        self.cpu = args.cpu
         # 维护 TCP 序列号 (Sequence Number) 和 确认号 (Ack Number)
         # 初始序列号随机化，模拟真实操作系统行为
         self.c_seq = random.randint(1000, 2000)  # 客户端 Seq
@@ -76,26 +77,44 @@ class TrafficGenerator:
         config_file = "Config/traffic.yaml"
         gpu = 0
         sample = 0
-        base_dir = Path(__file__).resolve().parent
+        base_dir = Path(__file__).resolve().parent.parent
         child_script = base_dir / "main.py"
         if self.system == "Windows":
-            self.p = subprocess.Popen([
-                sys.executable, str(child_script),
-                "--name", name,
-                "--config_file", config_file,
-                "--gpu", str(gpu),
-                "--sample", str(sample),
-                "--milestone", str(milestone),
-                "--traffic",
-                "--num_cycles", str(num_cycles),
-                "--size_every", str(size_every),
-            ],
-                creationflags=subprocess.CREATE_NEW_CONSOLE
-            )
+            if self.cpu:
+                self.p = subprocess.Popen([
+                    "cmd", "/k",
+                    sys.executable, str(child_script),
+                    "--name", name,
+                    "--config_file", config_file,
+                    "--sample", str(sample),
+                    "--milestone", str(milestone),
+                    "--traffic",
+                    "--num_cycles", str(num_cycles),
+                    "--size_every", str(size_every),
+                ],
+                    creationflags=subprocess.CREATE_NEW_CONSOLE
+                )
+            else:
+                self.p = subprocess.Popen([
+                    "cmd", "/k",
+                    sys.executable, str(child_script),
+                    "--name", name,
+                    "--config_file", config_file,
+                    "--gpu", str(gpu),
+                    "--sample", str(sample),
+                    "--milestone", str(milestone),
+                    "--traffic",
+                    "--num_cycles", str(num_cycles),
+                    "--size_every", str(size_every),
+                ],
+                    creationflags=subprocess.CREATE_NEW_CONSOLE
+                )
             print("模型采样已启动！")
         elif self.system == "Linux":
             self.p = subprocess.Popen(
-                [sys.executable, str(child_script),
+                [
+                "cmd", "/k",
+                sys.executable, str(child_script),
                  "--name", name,
                  "--config_file", config_file,
                  "--gpu", str(gpu),
@@ -136,7 +155,7 @@ class TrafficGenerator:
                 self.stop_child_group(3.0)
             elif self.system == "Windows":
                 self.stop_child(3)
-            print("\n[INFO] 模型采样已停止", flush=True)
+            print("[INFO] 模型采样已停止", flush=True)
         #self.packets.clear()
 
     def _get_tcp_layer(self, direction, flags, payload_len=0):

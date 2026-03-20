@@ -15,6 +15,7 @@ def parse_args():
     parser.add_argument('--s_port', type=int, default=443, help='服务端端口')
     parser.add_argument("--host_type", type=str, default="c", help='指示本机类型c/s')
     parser.add_argument('--sample', action='store_true', default=False, help='是否同时启动模型采样.')
+    parser.add_argument('--cpu', action='store_true', default=False, help='是否在cpu上采样.')
     args = parser.parse_args()
     return args
 
@@ -31,13 +32,11 @@ if __name__ == "__main__":
     generator = TrafficGenerator(args)
     #启动采样程序
     if args.sample:
-        generator.sampling(milestone=10,num_cycles=5,size_every=1000)
+        generator.sampling(milestone=10,num_cycles=1,size_every=100)
 
     listen = SequentialCSVConsumer(
         generator=generator,    #生成器
         folder_path=data_path,  # 监听目录
-        start_index=1,
-        stable_interval=0.2,
-        stable_checks=3
+        start_index=1
     )
     listen.start()

@@ -148,7 +148,7 @@ class Trainer(object):
     def sample(self, num_cycles, size_every, shape=None, model_kwargs=None, cond_fn=None):
         if self.logger is not None:
             tic = time.time()
-            self.logger.log_info('Begin to sample...')
+            self.logger.log_info('[WORK] 扩散模型采样中...')
         samples = np.empty([0, shape[0], shape[1]])
         #9=17397/2001+1
         #num_cycle = int(num // size_every) + 1
@@ -160,14 +160,14 @@ class Trainer(object):
             torch.cuda.empty_cache()
 
         if self.logger is not None:
-            self.logger.log_info('Sampling done, time: {:.2f}'.format(time.time() - tic))
+            self.logger.log_info('[INFO] 采样完成, time: {:.2f}'.format(time.time() - tic))
         #samples.shape=(num_cycle*size_every, 24,7)
         return samples
 
     def restore(self, raw_dataloader, shape=None, coef=1e-1, stepsize=1e-1, sampling_steps=50):
         if self.logger is not None:
             tic = time.time()
-            self.logger.log_info('Begin to restore...')
+            self.logger.log_info('[INFO] Begin to restore...')
         model_kwargs = {}
         model_kwargs['coef'] = coef
         model_kwargs['learning_rate'] = stepsize

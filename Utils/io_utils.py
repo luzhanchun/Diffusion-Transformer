@@ -1,5 +1,6 @@
 import os
 import sys
+from pathlib import Path
 
 import pandas as pd
 import yaml
@@ -49,7 +50,7 @@ def seed_everything(seed, cudnn_deterministic=False):
         seed: the integer value seed for global random state
     """
     if seed is not None:
-        print(f"Global seed set to {seed}")
+        print(f"[INFO] Global seed set to {seed}")
         random.seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
@@ -263,8 +264,18 @@ def postprocess_data(samples):     #shape=(num,window,dim)
 
     return data
 def save_to_csv(save_dir, fake_data):
-    feature_dir = os.path.join(save_dir, 'features')
-    os.makedirs(feature_dir, exist_ok=True)
+
+    folder_path = Path(save_dir) / "features"
+    folder_path.mkdir(parents=True, exist_ok=True)
+    #########检测目录下有多少个csv文件
+    count = len(list(folder_path.glob("*.csv")))
+    index = count+1
+
+    #feature_dir = os.path.join(save_dir, 'features')
+    #os.makedirs(feature_dir, exist_ok=True)
+
+
+    #######准备数据###########
     # fake_data: shape (seq_len, 2) type:int64
     #构造第三列
     third_col = np.where(fake_data[:, 0] > 0, 1, -1)
@@ -273,5 +284,20 @@ def save_to_csv(save_dir, fake_data):
     # 扩展为 (seq_len, 3)
     data_3dim = np.concatenate([fake_data, third_col.reshape(-1, 1)], axis=1)
     df = pd.DataFrame(data_3dim, columns=["pkg_len", "pkg_iat","pkt_dir"])
-    df.to_csv(os.path.join(feature_dir,"data_i.csv"), index=False)
-    print("Sampling batch number:i ······· save to data_i.csv")
+
+    ############存储文件###################
+    final_path = folder_path / f"data_{index}.csv"
+    tmp_path = folder_path / f"data_{index}.csv.tmp"
+    # 保险起见，清理残留临时文件
+    if tmp_path.exists():
+        tmp_path.unlink()
+    # 1. 先写临时文件
+    with open(tmp_path, "w", encoding="utf-8-sig", newline="") as f:
+        df.to_csv(f, index=True)
+        # 2. flush + fsync，尽量确保内容真正落盘
+        f.flush()
+        os.fsync(f.fileno())
+    # 3. 原子替换/重命名为正式文件
+    os.replace(tmp_path, final_path)
+    #df.to_csv(os.path.join(feature_dir,"data_3.csv"), index=False)
+    print(f"[INFO] Sampling batch number:i ······· save to data_{index}.csv")

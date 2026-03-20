@@ -78,9 +78,10 @@ def main():
     logger = Logger(args)
     logger.save_config(config)
 
-
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     #实例化模型
-    model = instantiate_from_config(config['model']).cuda()
+    #model = instantiate_from_config(config['model']).cuda()
+    model = instantiate_from_config(config['model']).to(device)
     if args.sample == 1 and args.mode in ['infill', 'predict']:
         test_dataloader_info = build_dataloader_cond(config, args)
     #无条件生成加载dataloader

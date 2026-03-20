@@ -13,32 +13,32 @@ from engine.traffic_generator import TrafficGenerator
 
 FILE_PATTERN = re.compile(r"^data_(\d+)\.csv$")
 
-def is_file_stable(file_path: Path, interval: float = 0.2, checks: int = 3) -> bool:
-    """
-    判断文件是否已经写稳定。
-    连续 checks 次检查文件大小都不变，则认为文件已写完。
-    """
-    if not file_path.exists() or not file_path.is_file():
-        return False
-
-    try:
-        last_size = file_path.stat().st_size
-    except OSError:
-        return False
-
-    for _ in range(checks):
-        time.sleep(interval)
-        try:
-            current_size = file_path.stat().st_size
-        except OSError:
-            return False
-
-        if current_size != last_size:
-            return False
-
-        last_size = current_size
-
-    return True
+# def is_file_stable(file_path: Path, interval: float = 0.2, checks: int = 3) -> bool:
+#     """
+#     判断文件是否已经写稳定。
+#     连续 checks 次检查文件大小都不变，则认为文件已写完。
+#     """
+#     if not file_path.exists() or not file_path.is_file():
+#         return False
+#
+#     try:
+#         last_size = file_path.stat().st_size
+#     except OSError:
+#         return False
+#
+#     for _ in range(checks):
+#         time.sleep(interval)
+#         try:
+#             current_size = file_path.stat().st_size
+#         except OSError:
+#             return False
+#
+#         if current_size != last_size:
+#             return False
+#
+#         last_size = current_size
+#
+#     return True
 
 class SequentialCSVConsumer:
     def __init__(
@@ -46,8 +46,8 @@ class SequentialCSVConsumer:
         generator: TrafficGenerator,
         folder_path: str,
         start_index: int = 1,
-        stable_interval: float = 0.2,
-        stable_checks: int = 3,
+        # stable_interval: float = 0.2,
+        # stable_checks: int = 3,
     ):
         self.generator = generator
         self.stop_event = threading.Event()
@@ -56,8 +56,8 @@ class SequentialCSVConsumer:
 
         self.folder = Path(folder_path).resolve()
         self.next_index = start_index
-        self.stable_interval = stable_interval
-        self.stable_checks = stable_checks
+        # self.stable_interval = stable_interval
+        # self.stable_checks = stable_checks
         self.lock = threading.Lock()
         self.cv = threading.Condition(self.lock)
         self.stop_event = threading.Event()
@@ -152,12 +152,12 @@ class SequentialCSVConsumer:
             if not file_path.exists():
                 return
 
-            if not is_file_stable(
-                file_path,
-                interval=self.stable_interval,
-                checks=self.stable_checks
-            ):
-                return
+            # if not is_file_stable(
+            #     file_path,
+            #     interval=self.stable_interval,
+            #     checks=self.stable_checks
+            # ):
+            #     return
 
             try:
                 df = pd.read_csv(file_path, header=0)

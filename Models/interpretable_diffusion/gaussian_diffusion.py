@@ -185,7 +185,7 @@ class Diffusion_TS(nn.Module):
         device = self.betas.device
         img = torch.randn(shape, device=device)
         for t in tqdm(reversed(range(0, self.num_timesteps)),
-                      desc='sampling loop time step', total=self.num_timesteps):
+                      desc='[WORK] sampling loop time step', total=self.num_timesteps):
             img, _ = self.p_sample(img, t)
         return img
 
@@ -201,7 +201,7 @@ class Diffusion_TS(nn.Module):
         time_pairs = list(zip(times[:-1], times[1:]))  # [(T-1, T-2), (T-2, T-3), ..., (1, 0), (0, -1)]
         img = torch.randn(shape, device=device)
 
-        for time, time_next in tqdm(time_pairs, desc='sampling loop time step'):
+        for time, time_next in tqdm(time_pairs, desc='[WORK] sampling loop time step'):
             time_cond = torch.full((batch,), time, device=device, dtype=torch.long)
             pred_noise, x_start, *_ = self.model_predictions(img, time_cond, clip_x_start=clip_denoised)
 
@@ -463,7 +463,7 @@ class Diffusion_TS(nn.Module):
         batch, device = shape[0], self.betas.device
         img = torch.randn(shape, device=device)
         for t in tqdm(reversed(range(0, self.num_timesteps)),
-                      desc='sampling loop time step', total=self.num_timesteps):
+                      desc='[WORK] sampling loop time step', total=self.num_timesteps):
             img, x_start = self.p_sample(img, t, clip_denoised=clip_denoised, cond_fn=cond_fn,
                                          model_kwargs=model_kwargs)
         return img
@@ -486,7 +486,7 @@ class Diffusion_TS(nn.Module):
         img = torch.randn(shape, device=device)
         x_start = None
 
-        for time, time_next in tqdm(time_pairs, desc='sampling loop time step'):
+        for time, time_next in tqdm(time_pairs, desc='[WORK] sampling loop time step'):
             time_cond = torch.full((batch,), time, device=device, dtype=torch.long)
             pred_noise, x_start, *_ = self.model_predictions(img, time_cond, clip_x_start=clip_denoised)
 
