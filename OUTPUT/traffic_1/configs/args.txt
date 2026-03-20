@@ -381,3 +381,26 @@
   tensorboard: False
   traffic: True
   train: False
+==> torch version: 2.0.1+cpu
+==> cudnn version: None
+==> Cmd:
+['D:\\PycharmProjects\\My_Paper_exe\\Diffusion-Transformer\\main.py', '--name', 'traffic_1', '--config_file', 'Config/traffic.yaml', '--sample', '0', '--milestone', '10', '--traffic', '--num_cycles', '1', '--size_every', '100']
+==> args:
+  config_file: Config/traffic.yaml
+  cudnn_deterministic: False
+  gpu: None
+  milestone: 10
+  missing_ratio: 0.0
+  mode: infill
+  name: traffic_1
+  num_cycles: 1
+  opts: []
+  output: OUTPUT
+  pred_len: 0
+  sample: 0
+  save_dir: OUTPUT\traffic_1
+  seed: 12345
+  size_every: 100
+  tensorboard: False
+  traffic: True
+  train: False

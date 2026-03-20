@@ -31,6 +31,7 @@ class TrafficGenerator:
         self.host_type = args.host_type
         self.sample = args.sample
         self.cpu = args.cpu
+        self.send = args.send
         # 维护 TCP 序列号 (Sequence Number) 和 确认号 (Ack Number)
         # 初始序列号随机化，模拟真实操作系统行为
         self.c_seq = random.randint(1000, 2000)  # 客户端 Seq
@@ -260,10 +261,11 @@ class TrafficGenerator:
 
         # 2. 设置 Scapy 包的时间戳 (用于 pcap 分析)
         pkt.time = self.current_timestamp
-        if (direction == 'c2s')&(self.host_type == 'c'):
-            send(pkt, verbose=False) #不打印发送信息
-        if (direction == 's2c')&(self.host_type == 's'):
-            send(pkt, verbose=False) #不打印发送信息
+        if self.send:
+            if (direction == 'c2s') & (self.host_type == 'c'):
+                send(pkt, verbose=False)  # 不打印发送信息
+            if (direction == 's2c') & (self.host_type == 's'):
+                send(pkt, verbose=False)  # 不打印发送信息
         #pkt.show()
         #send(pkt, verbose=True)
         self.packets.append(pkt)

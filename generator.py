@@ -16,6 +16,7 @@ def parse_args():
     parser.add_argument("--host_type", type=str, default="c", help='指示本机类型c/s')
     parser.add_argument('--sample', action='store_true', default=False, help='是否同时启动模型采样.')
     parser.add_argument('--cpu', action='store_true', default=False, help='是否在cpu上采样.')
+    parser.add_argument('--send', action='store_true', default=False, help='是否发送数据包.')
     args = parser.parse_args()
     return args
 
