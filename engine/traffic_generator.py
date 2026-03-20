@@ -147,7 +147,7 @@ class TrafficGenerator:
         if not self.packets:
             print("[INFO] 没有可写入的数据包")
             return
-        file_exists = os.path.exists(filename)
+        file_exists = os.path.isfile(filename)
         # append=True 表示追加写入，不覆盖原文件
         wrpcap(filename, self.packets, append=file_exists)
         print(f"\n[INFO] Completed! 背景流量已保存至: {filename} (共{len(self.packets)} packets)")
