@@ -147,6 +147,8 @@ class TrafficGenerator:
         if not self.packets:
             print("[INFO] 没有可写入的数据包")
             return
+        # 确保目录存在
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
         file_exists = os.path.isfile(filename)
         print(file_exists)
         # append=True 表示追加写入，不覆盖原文件
