@@ -39,7 +39,7 @@ def zeek_log_to_csv(input_file: str, output_file: str):
             writer.writerow([pkt_i, length, int(iat), direction])
 
 if __name__ == "__main__":
-    data_index = "data1"
+    data_index = "data5"
     input_file = os.path.join(".",data_index,"flow_packets_pkt.log")
     out_file = os.path.join(".",data_index,"data.csv")
     print(input_file)

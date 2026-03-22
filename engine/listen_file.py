@@ -46,6 +46,7 @@ class SequentialCSVConsumer:
         generator: TrafficGenerator,
         folder_path: str,
         start_index: int = 1,
+        count: int = 1000,
         # stable_interval: float = 0.2,
         # stable_checks: int = 3,
     ):
@@ -53,6 +54,7 @@ class SequentialCSVConsumer:
         self.stop_event = threading.Event()
         #已经释放released_pkt个数据包
         self.released_pkt = 0
+        self.count = count
 
         self.folder = Path(folder_path).resolve()
         self.next_index = start_index
@@ -91,8 +93,10 @@ class SequentialCSVConsumer:
         # 删除第一列
         df.drop(df.columns[0], axis=1, inplace=True)
         data = df.values
-        count = 100
-        #count = data.shape[0]
+        if self.count<0:
+            count = data.shape[0]
+        else:
+            count = self.count
         pkt_len = data[:, 0]
         iat = data[:, 1]
         direction = data[:, 2]
@@ -103,20 +107,19 @@ class SequentialCSVConsumer:
         self.generator.handshake_tls_fake()
 
         pbar = tqdm(
-            range(count+7),
+            range(count),
             desc="[WORK] 背景流量释放中",
             leave=True,
             colour="green",
-            ncols=220, #linux:150
+            ncols=150, #linux:150
             unit="pkt"
         )
         for idx in pbar:
-            if idx > 6:
-                pbar.set_postfix_str(f"released packets: {idx+1+self.released_pkt}")
-                self.generator.control_packet(pkt_len[idx], iat[idx], direction[idx])
+            pbar.set_postfix_str(f"released packets: {idx+1+self.released_pkt}")
+            self.generator.control_packet(pkt_len[idx], iat[idx], direction[idx])
         # 4. TCP挥手
 
-        self.released_pkt = self.released_pkt+count+7
+        self.released_pkt = self.released_pkt+count
 
         # self.stop_event.clear()
         # t = threading.Thread(target=self.loading)

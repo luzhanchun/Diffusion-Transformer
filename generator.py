@@ -17,6 +17,7 @@ def parse_args():
     parser.add_argument('--sample', action='store_true', default=False, help='是否同时启动模型采样.')
     parser.add_argument('--cpu', action='store_true', default=False, help='是否在cpu上采样.')
     parser.add_argument('--send', action='store_true', default=False, help='是否发送数据包.')
+    parser.add_argument('--count', type=int, default=-1, help='发包数量')
     args = parser.parse_args()
     return args
 
@@ -38,6 +39,7 @@ if __name__ == "__main__":
     listen = SequentialCSVConsumer(
         generator=generator,    #生成器
         folder_path=data_path,  # 监听目录
-        start_index=1
+        start_index=1,
+        count=args.count
     )
     listen.start()

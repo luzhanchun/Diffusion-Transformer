@@ -153,7 +153,7 @@ class TrafficGenerator:
         file_exists = os.path.isfile(filename)
         # append=True 表示追加写入，不覆盖原文件
         wrpcap(filename, self.packets, append=file_exists)
-        print(f"[INFO] Completed! 背景流量已保存至: {filename} (共{len(self.packets)} packets)")
+        print(f"\n[INFO] Completed! 背景流量已保存至: {filename} ")
         if self.sample:
             if self.system == "Linux":
                 self.stop_child_group(3.0)
@@ -264,13 +264,13 @@ class TrafficGenerator:
 
         # 2. 设置 Scapy 包的时间戳 (用于 pcap 分析)
         pkt.time = self.current_timestamp
+        #time.sleep(iat/1000000)
         if self.send:
             if (direction == 'c2s') & (self.host_type == 'c'):
                 send(pkt, verbose=False)  # 不打印发送信息
             if (direction == 's2c') & (self.host_type == 's'):
                 send(pkt, verbose=False)  # 不打印发送信息
         #pkt.show()
-        #send(pkt, verbose=True)
         self.packets.append(pkt)
 
     def generate_encrypted_payload(self,length: int) -> bytes:
