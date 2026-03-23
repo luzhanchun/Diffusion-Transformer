@@ -112,25 +112,45 @@ class TrafficGenerator:
                 )
             print("模型采样已启动！")
         elif self.system == "Linux":
-            self.p = subprocess.Popen(
-                [
-                sys.executable, str(child_script),
-                 "--name", name,
-                 "--config_file", config_file,
-                 "--gpu", str(gpu),
-                 "--sample", str(sample),
-                 "--milestone", str(milestone),
-                 "--traffic",
-                 "--num_cycles", str(num_cycles),
-                 "--size_every", str(size_every),
-            ],
-                stdin=subprocess.DEVNULL,
-                stdout=None,
-                stderr=None,
-                # stdout=subprocess.DEVNULL,
-                # stderr=subprocess.DEVNULL,
-                preexec_fn=os.setsid,
-            )
+            if self.cpu:
+                self.p = subprocess.Popen(
+                    [
+                        sys.executable, str(child_script),
+                        "--name", name,
+                        "--config_file", config_file,
+                        "--sample", str(sample),
+                        "--milestone", str(milestone),
+                        "--traffic",
+                        "--num_cycles", str(num_cycles),
+                        "--size_every", str(size_every),
+                    ],
+                    stdin=subprocess.DEVNULL,
+                    # stdout=None,
+                    # stderr=None,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    preexec_fn=os.setsid,
+                )
+            else:
+                self.p = subprocess.Popen(
+                    [
+                        sys.executable, str(child_script),
+                        "--name", name,
+                        "--config_file", config_file,
+                        "--gpu", str(gpu),
+                        "--sample", str(sample),
+                        "--milestone", str(milestone),
+                        "--traffic",
+                        "--num_cycles", str(num_cycles),
+                        "--size_every", str(size_every),
+                    ],
+                    stdin=subprocess.DEVNULL,
+                    # stdout=None,
+                    # stderr=None,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    preexec_fn=os.setsid,
+                )
             print("模型采样已启动！")
         else:
             raise NotImplementedError(f"暂不支持的系统: {self.system}")
