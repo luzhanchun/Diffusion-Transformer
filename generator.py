@@ -2,6 +2,7 @@ import os
 import argparse
 
 from engine.listen_file import SequentialCSVConsumer
+from engine.start_syn import StartSyn
 from engine.traffic_generator import TrafficGenerator
 
 
@@ -35,11 +36,18 @@ if __name__ == "__main__":
     #启动采样程序
     if args.sample:
         generator.sampling(milestone=10,num_cycles=1,size_every=100)
-
+    #初始化事件监听器
     listen = SequentialCSVConsumer(
         generator=generator,    #生成器
         folder_path=data_path,  # 监听目录
         start_index=1,
         count=args.count
     )
+    #初始化同步启动器
+    # starter = StartSyn(listen=listen, args=args)
+    # if args.host_type == "c":
+    #     starter.client()
+    # else:
+    #     starter.server()
+
     listen.start()
