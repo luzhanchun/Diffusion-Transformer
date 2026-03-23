@@ -61,6 +61,7 @@ class StartSyn:
 
     def handle(self,conn, addr):
         print(f"[INFO] Connected! addr=: {addr}")
+        print("[INFO] 系统将在10s之后启动!")
         try:
             # 从当前数据里读取一次数据
             data = conn.recv(4096)
@@ -83,7 +84,6 @@ class StartSyn:
 
             # print(f"[SERVER] receive start_time_ms = {start_time_ms}")
             # print(f"[SERVER] waiting for synchronized start...")
-            print("[INFO] 系统将在10s之后启动!")
             self.wait_until_timestamp(start_time_ts)
             # actual_ms = int(time.time() * 1000)
             # print(f"[SERVER] actual start ms = {actual_ms}, diff = {actual_ms - start_time_ms} ms")
