@@ -44,7 +44,15 @@ class TrafficGenerator:
         self.p = None
         self.system = platform.system()
 
-    def stop_child(self, timeout=3):
+    def kill_child(self):
+        if self.sample:
+            if self.system == "Linux":
+                self.stop_child_linux(3.0)
+            elif self.system == "Windows":
+                self.stop_child_windows(3)
+            print("[INFO] 模型采样已停止", flush=True)
+
+    def stop_child_windows(self, timeout=3):
         if self.p is None:
             return
 
@@ -53,25 +61,41 @@ class TrafficGenerator:
 
         self.p.terminate()  # 给子进程发终止信号
 
-        try:
-            self.p.wait(timeout=timeout)
-        except subprocess.TimeoutExpired:
-            self.p.kill()  # 还不退就强杀
-            self.p.wait()
+        # try:
+        #     self.p.wait(timeout=timeout)
+        # except subprocess.TimeoutExpired:
+        #     self.p.kill()  # 还不退就强杀
+        #     self.p.wait()
 
-    def stop_child_group(self, timeout: float = 3.0):
+        subprocess.run(
+            ["taskkill", "/PID", str(self.p.pid), "/T", "/F"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+
+    def stop_child_linux(self, timeout: float = 3.0):
         if self.p is None:
             return
-        if self.p.poll() is not None:
+        if self.p.poll() is not None: #程序已经推出
             return
         pgid = os.getpgid(self.p.pid)
         os.killpg(pgid, signal.SIGTERM)
+        print("温和杀死")
+        # try:
+        #     self.p.wait(timeout=timeout)
+        # except subprocess.TimeoutExpired:
+        #     os.killpg(pgid, signal.SIGKILL)
+        #     self.p.wait()
+        start = time.time()
+        while time.time() - start < timeout:
+            if self.p.poll() is not None:
+                return
+            time.sleep(0.1)
 
-        try:
-            self.p.wait(timeout=timeout)
-        except subprocess.TimeoutExpired:
+        # 超时还没退出，强杀
+        if self.p.poll() is None:
             os.killpg(pgid, signal.SIGKILL)
-            self.p.wait()
+            print("强行杀死")
 
     def sampling(self,milestone=10,num_cycles=5,size_every=1000):
         name = "traffic_1"
@@ -174,12 +198,12 @@ class TrafficGenerator:
         # append=True 表示追加写入，不覆盖原文件
         wrpcap(filename, self.packets, append=file_exists)
         print(f"\n[INFO] Completed! 背景流量已保存至: {filename} ")
-        if self.sample:
-            if self.system == "Linux":
-                self.stop_child_group(3.0)
-            elif self.system == "Windows":
-                self.stop_child(3)
-            print("[INFO] 模型采样已停止", flush=True)
+        # if self.sample:
+        #     if self.system == "Linux":
+        #         self.stop_child_linux(3.0)
+        #     elif self.system == "Windows":
+        #         self.stop_child_windows(3)
+        #     print("[INFO] 模型采样已停止", flush=True)
         #self.packets.clear()
 
     def _get_tcp_layer(self, direction, flags, payload_len=0):

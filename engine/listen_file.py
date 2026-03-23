@@ -232,8 +232,10 @@ class SequentialCSVConsumer:
             self.stop_event.set()
             t.join()
 
-
             print("[INFO] 收到退出信号，正在停止...")
+            #杀死子程序
+            self.generator.kill_child()
+
             self.stop_event.set()
             with self.cv:
                 self.cv.notify_all()

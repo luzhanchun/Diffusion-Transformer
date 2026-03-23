@@ -19,7 +19,7 @@ class StartSyn:
 
     def client(self):
         # 给服务端留出准备时间，建议3~5秒
-        delay_sec = 5
+        delay_sec = 10
         start_time_ts = time.time() + delay_sec
         start_time_ms = int(start_time_ts * 1000)
 
@@ -51,7 +51,7 @@ class StartSyn:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind((self.Server_IP, self.Server_PORT))
             s.listen(5)
-            print(f"[INFO] 等待系统启动命令(listening on {self.Server_IP}:{self.Server_IP})")
+            print(f"[INFO] 等待系统启动命令(listening on {self.Server_IP}:{self.Server_IP})······")
 
             while True:
                 conn, addr = s.accept()
