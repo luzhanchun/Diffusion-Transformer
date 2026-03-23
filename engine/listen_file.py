@@ -118,7 +118,7 @@ class SequentialCSVConsumer:
             pbar.set_postfix_str(f"released packets: {idx+1+self.released_pkt}")
             self.generator.control_packet(pkt_len[idx], iat[idx], direction[idx])
         # 4. TCP挥手
-
+        self.generator.teardown_tcp()
         self.released_pkt = self.released_pkt+count
 
         # self.stop_event.clear()

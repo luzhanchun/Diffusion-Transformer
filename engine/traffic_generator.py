@@ -207,6 +207,33 @@ class TrafficGenerator:
         tcp_ack = self._get_tcp_layer('c2s', 'A', payload_len=0)
         self.build_packet('c2s', tcp_ack, iat=65)
         #print("[*] TCP Handshake Completed.")
+
+    def teardown_tcp(self):
+        """
+        模拟 TCP 四次挥手
+        """
+        # 1. Client FIN/ACK
+        # 客户端主动关闭连接，发送 FIN，表示自己没有数据要发了
+        # FIN 会消耗 1 个 seq
+        tcp_fin_1 = self._get_tcp_layer('c2s', 'FA', payload_len=1)
+        self.build_packet('c2s', tcp_fin_1, iat=86)
+
+        # 2. Server ACK
+        # 服务端确认收到客户端的 FIN
+        # ACK 本身不消耗 seq
+        tcp_ack_1 = self._get_tcp_layer('s2c', 'A', payload_len=0)
+        self.build_packet('s2c', tcp_ack_1, iat=153)
+
+        # 3. Server FIN/ACK
+        # 服务端也发送 FIN，表示自己也没有数据要发了
+        # FIN 会消耗 1 个 seq
+        tcp_fin_2 = self._get_tcp_layer('s2c', 'FA', payload_len=1)
+        self.build_packet('s2c', tcp_fin_2, iat=65)
+
+        # 4. Client ACK
+        # 客户端确认收到服务端的 FIN
+        tcp_ack_2 = self._get_tcp_layer('c2s', 'A', payload_len=0)
+        self.build_packet('c2s', tcp_ack_2, iat=72)
     def handshake_tls_fake(self):
         # --- 1. Client Hello ---
         # 构造 TLS Client Hello 消息
@@ -264,7 +291,7 @@ class TrafficGenerator:
 
         # 2. 设置 Scapy 包的时间戳 (用于 pcap 分析)
         pkt.time = self.current_timestamp
-        #time.sleep(iat/1000000)
+        time.sleep(iat/1000000)
         if self.send:
             if (direction == 'c2s') & (self.host_type == 'c'):
                 send(pkt, verbose=False)  # 不打印发送信息
