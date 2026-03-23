@@ -83,7 +83,7 @@ class StartSyn:
 
             # print(f"[SERVER] receive start_time_ms = {start_time_ms}")
             # print(f"[SERVER] waiting for synchronized start...")
-
+            print("[INFO] 系统将在10s之后启动!")
             self.wait_until_timestamp(start_time_ts)
             # actual_ms = int(time.time() * 1000)
             # print(f"[SERVER] actual start ms = {actual_ms}, diff = {actual_ms - start_time_ms} ms")
