@@ -18,6 +18,7 @@ def parse_args():
     parser.add_argument('--sample', action='store_true', default=False, help='是否同时启动模型采样.')
     parser.add_argument('--cpu', action='store_true', default=False, help='是否在cpu上采样.')
     parser.add_argument('--send', action='store_true', default=False, help='是否发送数据包.')
+    parser.add_argument('--syn', action='store_true', default=False, help='是否同步启动.')
     parser.add_argument('--count', type=int, default=-1, help='发包数量')
     args = parser.parse_args()
     return args
@@ -44,10 +45,11 @@ if __name__ == "__main__":
         count=args.count
     )
     #初始化同步启动器
-    starter = StartSyn(listen=listen, args=args)
-    if args.host_type == "c":
-        starter.client()
-    else:
-        starter.server()
+    if args.syn:
+        starter = StartSyn(listen=listen, args=args)
+        if args.host_type == "c":
+            starter.client()
+        else:
+            starter.server()
 
     listen.start()
