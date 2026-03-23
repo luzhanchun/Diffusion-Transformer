@@ -1,4 +1,6 @@
 import os
+import random
+
 import torch
 import argparse
 import numpy as np
@@ -62,12 +64,10 @@ def parse_args():
     args.save_dir = os.path.join(args.output, f'{args.name}')
     return args
 
-def main():
-    args = parse_args()
-    print(args)
+def main(args,seed):
     #随机数种子
-    if args.seed is not None:
-        seed_everything(args.seed)
+    if seed is not None:
+        seed_everything(seed)
     #cuda
     if args.gpu is not None:
         torch.cuda.set_device(args.gpu)
@@ -131,4 +131,14 @@ def main():
             np.save(os.path.join(args.save_dir, f'ddpm_fake_{args.name}.npy'), samples)
 
 if __name__ == '__main__':
-    main()
+    args = parse_args()
+    seed = args.seed
+    #独立随机数生成器：两个程序每轮循环完全同步，且没有额外随机调用
+    rng = random.Random(args.seed)
+    print(args)
+    if not args.train:
+        while True:
+            main(args, seed)
+            seed = rng.randint(10000, 20000)
+    else:
+        main(args,seed)

@@ -300,4 +300,4 @@ def save_to_csv(save_dir, fake_data):
     # 3. 原子替换/重命名为正式文件
     os.replace(tmp_path, final_path)
     #df.to_csv(os.path.join(feature_dir,"data_3.csv"), index=False)
-    print(f"[INFO] Sampling batch number:i ······· save to data_{index}.csv")
+    print(f"[INFO] Sampling batch number:{index}······· save to data_{index}.csv")

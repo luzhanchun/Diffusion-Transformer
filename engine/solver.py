@@ -51,8 +51,8 @@ class Trainer(object):
         sc_cfg['params']['optimizer'] = self.opt
         self.sch = instantiate_from_config(sc_cfg)
 
-        if self.logger is not None:
-            self.logger.log_info(str(get_model_parameters_info(self.model)))
+        # if self.logger is not None:
+        #     self.logger.log_info(str(get_model_parameters_info(self.model)))
         self.log_frequency = 100
 
     def save(self, milestone, verbose=False):
