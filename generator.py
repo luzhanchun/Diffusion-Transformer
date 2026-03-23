@@ -44,10 +44,10 @@ if __name__ == "__main__":
         count=args.count
     )
     #初始化同步启动器
-    # starter = StartSyn(listen=listen, args=args)
-    # if args.host_type == "c":
-    #     starter.client()
-    # else:
-    #     starter.server()
+    starter = StartSyn(listen=listen, args=args)
+    if args.host_type == "c":
+        starter.client()
+    else:
+        starter.server()
 
     listen.start()
