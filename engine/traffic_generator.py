@@ -125,10 +125,10 @@ class TrafficGenerator:
                  "--size_every", str(size_every),
             ],
                 stdin=subprocess.DEVNULL,
-                # stdout=None,
-                # stderr=None,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                stdout=None,
+                stderr=None,
+                # stdout=subprocess.DEVNULL,
+                # stderr=subprocess.DEVNULL,
                 preexec_fn=os.setsid,
             )
             print("模型采样已启动！")
