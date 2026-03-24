@@ -48,10 +48,8 @@ class TrafficGenerator:
         if self.sample:
             if self.system == "Linux":
                 self.stop_child_linux(3.0)
-                print("[INFO] 模型采样已停止", flush=True)
             elif self.system == "Windows":
                 self.stop_child_windows(3)
-                print("[INFO] 模型采样已停止", flush=True)
 
     def stop_child_windows(self, timeout=3):
         if self.p is None:
@@ -73,6 +71,7 @@ class TrafficGenerator:
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
+        print("[INFO] 模型采样程序已温和杀死！")
 
     def stop_child_linux(self, timeout: float = 3.0):
         if self.p is None:
@@ -81,7 +80,7 @@ class TrafficGenerator:
             return
         pgid = os.getpgid(self.p.pid)
         os.killpg(pgid, signal.SIGTERM)
-        print("温和杀死")
+        print("[INFO] 模型采样程序已温和杀死！")
         # try:
         #     self.p.wait(timeout=timeout)
         # except subprocess.TimeoutExpired:
@@ -96,7 +95,7 @@ class TrafficGenerator:
         # 超时还没退出，强杀
         if self.p.poll() is None:
             os.killpg(pgid, signal.SIGKILL)
-            print("强行杀死")
+            print("[INFO] 模型采样程序已强行杀死！")
 
     def sampling(self,milestone=10,num_cycles=5,size_every=1000):
         name = "traffic_1"
