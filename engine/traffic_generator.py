@@ -48,9 +48,10 @@ class TrafficGenerator:
         if self.sample:
             if self.system == "Linux":
                 self.stop_child_linux(3.0)
+                print("[INFO] 模型采样已停止", flush=True)
             elif self.system == "Windows":
                 self.stop_child_windows(3)
-            print("[INFO] 模型采样已停止", flush=True)
+                print("[INFO] 模型采样已停止", flush=True)
 
     def stop_child_windows(self, timeout=3):
         if self.p is None:
