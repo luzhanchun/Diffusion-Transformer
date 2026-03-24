@@ -51,7 +51,7 @@ class StartSyn:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind((self.Server_IP, self.Server_PORT))
             s.listen(5)
-            print(f"[INFO] 等待系统启动命令(listening on {self.Server_IP}:{self.Server_IP})······")
+            print(f"[INFO] 等待系统启动命令(listening on {self.Server_IP}:{self.Server_PORT})······")
 
             while True:
                 conn, addr = s.accept()
