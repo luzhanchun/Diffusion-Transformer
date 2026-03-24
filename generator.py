@@ -51,5 +51,5 @@ if __name__ == "__main__":
             starter.client()
         else:
             starter.server()
-
-    listen.start()
+    else:
+        listen.start()

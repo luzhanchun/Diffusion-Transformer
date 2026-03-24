@@ -63,6 +63,7 @@ class SequentialCSVConsumer:
         self.lock = threading.Lock()
         self.cv = threading.Condition(self.lock)
         self.stop_event = threading.Event()
+        self.loading_stop_event = threading.Event()  # 控制 loading
 
         # 记录收到事件、值得尝试处理的编号
         self.ready_indices = set()
@@ -77,9 +78,9 @@ class SequentialCSVConsumer:
 
     def loading(self):
         dots = ["", ".", "..", "...", "....", ".....", "......"]
-        while not self.stop_event.is_set():
+        while not self.loading_stop_event.is_set():
             for d in dots:
-                if self.stop_event.is_set():
+                if self.loading_stop_event.is_set():
                     break
                 sys.stdout.write(f"\r[WORK] 背景流量保存中{d}   ")
                 sys.stdout.flush()
@@ -223,25 +224,24 @@ class SequentialCSVConsumer:
             while True:
                 time.sleep(1)
         except KeyboardInterrupt:
-
-            self.stop_event.clear()
-            t = threading.Thread(target=self.loading)
-            t.start()
-            # 保存后清除self.generator.packets[]
-            self.generator.save_pcap(os.path.join("OUTPUT", "pcap", "background_traffic.pcap"))
-            self.stop_event.set()
-            t.join()
-
             print("[INFO] 收到退出信号，正在停止...")
-            #杀死子程序
-            self.generator.kill_child()
-
             self.stop_event.set()
             with self.cv:
                 self.cv.notify_all()
             observer.stop()
             observer.join()
             process_thread.join(timeout=2)
+
+            self.loading_stop_event.clear()
+            t = threading.Thread(target=self.loading)
+            t.start()
+            # 保存后清除self.generator.packets[]
+            self.generator.save_pcap(os.path.join("OUTPUT", "pcap", "background_traffic.pcap"))
+            self.loading_stop_event.set()
+            t.join()
+
+            #杀死子程序
+            self.generator.kill_child()
 
 
 class CSVEventHandler(FileSystemEventHandler):
