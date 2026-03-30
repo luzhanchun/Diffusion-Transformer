@@ -15,6 +15,9 @@ class StartSyn:
 
     def work(self):
         print("***********************系 统 启 动**************************")
+        # 启动采样程序
+        if self.listen.generator.sample:
+            self.listen.generator.sampling(milestone=10, num_cycles=1, size_every=500)
         self.listen.start()
 
     def client(self):

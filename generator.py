@@ -34,9 +34,6 @@ if __name__ == "__main__":
     if os.path.isfile(pcap_path):
         os.remove(pcap_path)
     generator = TrafficGenerator(args)
-    #启动采样程序
-    if args.sample:
-        generator.sampling(milestone=10,num_cycles=1,size_every=100)
     #初始化事件监听器
     listen = SequentialCSVConsumer(
         generator=generator,    #生成器
@@ -52,4 +49,7 @@ if __name__ == "__main__":
         else:
             starter.server()
     else:
+        # 启动采样程序
+        if args.sample:
+            generator.sampling(milestone=10, num_cycles=1, size_every=1000)
         listen.start()
