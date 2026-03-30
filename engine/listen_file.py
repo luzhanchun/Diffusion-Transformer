@@ -1,5 +1,6 @@
 import os
 import re
+import signal
 import sys
 import time
 import threading
@@ -51,7 +52,6 @@ class SequentialCSVConsumer:
         # stable_checks: int = 3,
     ):
         self.generator = generator
-        self.stop_event = threading.Event()
         #已经释放released_pkt个数据包
         self.released_pkt = 0
         self.count = count
@@ -64,13 +64,14 @@ class SequentialCSVConsumer:
         self.cv = threading.Condition(self.lock)
         self.stop_event = threading.Event()
         self.loading_stop_event = threading.Event()  # 控制 loading
+        self.exit_requested = threading.Event()
 
         # 记录收到事件、值得尝试处理的编号
         self.ready_indices = set()
-
         # 避免多个线程同时处理
         self.processing = False
-
+        self.observer = None
+        self.process_thread = None
         if not self.folder.exists():
             raise FileNotFoundError(f"目录不存在: {self.folder}")
         if not self.folder.is_dir():
@@ -205,43 +206,113 @@ class SequentialCSVConsumer:
                     waiting_logged = True
 
                 self.cv.wait(timeout=1.0)
-
+    def _signal_handler(self, signum, frame):
+        # 这里只做轻量操作，不做 join/save/kill
+        print("[INFO] 收到退出信号，准备停止...", flush=True)
+        self.exit_requested.set()
+        self.stop_event.set()
+        with self.cv:
+            self.cv.notify_all()
     def start(self):
         handler = CSVEventHandler(self)
-        observer = Observer()
-        observer.schedule(handler, str(self.folder), recursive=False)
+        self.observer = Observer()
+        self.observer.schedule(handler, str(self.folder), recursive=False)
 
-        process_thread = threading.Thread(target=self.processing_loop, daemon=True)
+        self.process_thread = threading.Thread(
+            target=self.processing_loop,
+            daemon=True
+        )
 
-        # 先启动观察者和处理线程
-        observer.start()
-        process_thread.start()
+        # Linux/Windows 都注册；主线程里注册
+        signal.signal(signal.SIGINT, self._signal_handler)
+        if hasattr(signal, "SIGTERM"):
+            signal.signal(signal.SIGTERM, self._signal_handler)
 
-        print(f"[INFO] 正在监听目录: {self.folder}")
-        print(f"[INFO] 从 data_{self.next_index}.csv 开始按顺序处理")
+        self.observer.start()
+        self.process_thread.start()
+
+        print(f"[INFO] 正在监听目录: {self.folder}", flush=True)
+        print(f"[INFO] 从 data_{self.next_index}.csv 开始按顺序处理", flush=True)
 
         try:
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            print("[INFO] 收到退出信号，正在停止...")
-            self.stop_event.set()
-            with self.cv:
-                self.cv.notify_all()
-            observer.stop()
-            observer.join()
-            process_thread.join(timeout=2)
+            while not self.exit_requested.is_set():
+                time.sleep(0.2)
+        finally:
+            self.shutdown()
+    def shutdown(self):
+        print("[INFO] 正在执行清理...", flush=True)
 
+        try:
+            if self.observer is not None:
+                self.observer.stop()
+                self.observer.join(timeout=5)
+        except Exception as e:
+            print(f"[WARN] observer 停止失败: {e}", flush=True)
+
+        try:
+            if self.process_thread is not None and self.process_thread.is_alive():
+                self.process_thread.join(timeout=5)
+        except Exception as e:
+            print(f"[WARN] process_thread 停止失败: {e}", flush=True)
+
+        t = None
+        try:
             self.loading_stop_event.clear()
-            t = threading.Thread(target=self.loading)
+            t = threading.Thread(target=self.loading, daemon=True)
             t.start()
-            # 保存后清除self.generator.packets[]
-            self.generator.save_pcap(os.path.join("OUTPUT", "pcap", "background_traffic.pcap"))
-            self.loading_stop_event.set()
-            t.join()
 
-            #杀死子程序
+            self.generator.save_pcap(
+                os.path.join("OUTPUT", "pcap", "background_traffic.pcap")
+            )
+        except Exception as e:
+            print(f"[WARN] 保存 pcap 失败: {e}", flush=True)
+        finally:
+            self.loading_stop_event.set()
+            if t is not None:
+                t.join(timeout=2)
+
+        try:
             self.generator.kill_child()
+        except Exception as e:
+            print(f"[WARN] kill_child 失败: {e}", flush=True)
+
+        print("[INFO] 已完成退出清理", flush=True)
+    # def start(self):
+    #     handler = CSVEventHandler(self)
+    #     observer = Observer()
+    #     observer.schedule(handler, str(self.folder), recursive=False)
+    #
+    #     process_thread = threading.Thread(target=self.processing_loop, daemon=True)
+    #
+    #     # 先启动观察者和处理线程
+    #     observer.start()
+    #     process_thread.start()
+    #
+    #     print(f"[INFO] 正在监听目录: {self.folder}")
+    #     print(f"[INFO] 从 data_{self.next_index}.csv 开始按顺序处理")
+    #
+    #     try:
+    #         while True:
+    #             time.sleep(1)
+    #     except KeyboardInterrupt:
+    #         print("[INFO] 收到退出信号，正在停止...")
+    #         self.stop_event.set()
+    #         with self.cv:
+    #             self.cv.notify_all()
+    #         observer.stop()
+    #         observer.join()
+    #         process_thread.join(timeout=2)
+    #
+    #         self.loading_stop_event.clear()
+    #         t = threading.Thread(target=self.loading)
+    #         t.start()
+    #         # 保存后清除self.generator.packets[]
+    #         self.generator.save_pcap(os.path.join("OUTPUT", "pcap", "background_traffic.pcap"))
+    #         self.loading_stop_event.set()
+    #         t.join()
+    #
+    #         #杀死子程序
+    #         self.generator.kill_child()
 
 
 class CSVEventHandler(FileSystemEventHandler):
