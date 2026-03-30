@@ -13,6 +13,9 @@ class StartSyn:
         self.Client_Port = args.c_port
         self.Server_IP = args.s_ip
         self.Server_PORT = args.s_port
+        self.start_event = threading.Event()
+        self.start_time_ts = None
+        self.start_lock = threading.Lock()
 
     def work(self):
         print("***********************系 统 启 动**************************")
@@ -61,15 +64,25 @@ class StartSyn:
             s.listen(5)
             print(f"[INFO] 等待系统启动命令(listening on {self.Server_IP}:{self.Server_PORT})······")
 
-            while True:
+            while not self.start_event.is_set():
                 conn, addr = s.accept()
                 client_ip, client_port = addr
                 if client_ip == self.Client_IP:
                     threading.Thread(target=self.handle, args=(conn, addr), daemon=True).start()
-
+                else:
+                    conn.close()
+            # 到这里说明 handle() 已经设置了启动事件
+            with self.start_lock:
+                start_time_ts = self.start_time_ts
+            if start_time_ts is None:
+                print("[ERROR] 未获取到启动时间", flush=True)
+                return
+            print("[INFO] 系统将在指定时间启动!", flush=True)
+            self.wait_until_timestamp(start_time_ts)
+            self.work()
     def handle(self,conn, addr):
         print(f"[INFO] Connected! addr=: {addr}")
-        print("[INFO] 系统将在10s之后启动!")
+        #print("[INFO] 系统将在10s之后启动!")
         try:
             # 从当前数据里读取一次数据
             data = conn.recv(4096)
@@ -89,14 +102,17 @@ class StartSyn:
                 "server_recv_time_ms": int(time.time() * 1000)
             }
             conn.sendall(json.dumps(ack).encode("utf-8"))
-
+            with self.start_lock:
+                if not self.start_event.is_set():
+                    self.start_time_ts = start_time_ts
+                    self.start_event.set()
+                    print("[INFO] 已收到启动命令，等待主线程启动系统", flush=True)
             # print(f"[SERVER] receive start_time_ms = {start_time_ms}")
             # print(f"[SERVER] waiting for synchronized start...")
-            self.wait_until_timestamp(start_time_ts)
+            #self.wait_until_timestamp(start_time_ts)
             # actual_ms = int(time.time() * 1000)
             # print(f"[SERVER] actual start ms = {actual_ms}, diff = {actual_ms - start_time_ms} ms")
-            self.work()
-
+            #self.work()
         except Exception as e:
             print(f"[SERVER] error: {e}")
         finally:
