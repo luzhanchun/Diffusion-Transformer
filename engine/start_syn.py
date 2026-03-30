@@ -32,7 +32,10 @@ class StartSyn:
         }
         print("[INFO] 发送系统启动命令······")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect((self.Server_IP, self.Server_PORT))
+            try:
+                s.connect((self.Server_IP, self.Server_PORT))
+            except ConnectionRefusedError:
+                print("[INFO] 目标主机程序未启动")
             s.sendall(json.dumps(msg).encode("utf-8"))
             ack_data = s.recv(4096)
             if ack_data:
