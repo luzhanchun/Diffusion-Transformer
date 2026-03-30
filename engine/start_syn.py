@@ -68,7 +68,7 @@ class StartSyn:
                 conn, addr = s.accept()
                 client_ip, client_port = addr
                 if client_ip == self.Client_IP:
-                    threading.Thread(target=self.handle, args=(conn, addr), daemon=True).start()
+                    self.handle(conn, addr)
                 else:
                     conn.close()
             # 到这里说明 handle() 已经设置了启动事件
