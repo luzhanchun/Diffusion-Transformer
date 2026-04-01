@@ -172,9 +172,11 @@ def instantiate_from_config(config):
     #module=Utils.Data_utils.real_datasets  cls=CustomDataset
     module, cls = config["target"].rsplit(".", 1)
     #import_module是Python的动态导入模块函数 getattr()从模块中获取类
-    #根据字符串动态导入模块并实例化类
+    #根据字符串动态导入模块并实例化类 cls成为类对象
     cls = getattr(importlib.import_module(module, package=None), cls)
     #使用配置参数实例化该类  返回的是类CustomDataset的实例化对象
+    #如果 config 里有 "params" 这个键，就取它的值
+    #如果没有，就使用默认值 dict()，也就是空字典 {}
     return cls(**config.get("params", dict()))
 
 def class_from_string(class_name):

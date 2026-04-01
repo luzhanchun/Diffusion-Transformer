@@ -143,7 +143,7 @@ class Diffusion_TS(nn.Module):
         posterior_variance = extract(self.posterior_variance, t, x_t.shape)
         posterior_log_variance_clipped = extract(self.posterior_log_variance_clipped, t, x_t.shape)
         return posterior_mean, posterior_variance, posterior_log_variance_clipped
-    
+    #输入Xt和t
     def output(self, x, t, padding_masks=None):
         trend, season = self.model(x, t, padding_masks=padding_masks)
         model_output = trend + season
@@ -236,7 +236,8 @@ class Diffusion_TS(nn.Module):
             return F.mse_loss
         else:
             raise ValueError(f'invalid loss type {self.loss_type}')
-
+    #前向加噪：按照每个样本各自时间步t,加不同强度的噪声，t越大，加的噪声越强，
+    #扩散前向过程原始定义是逐步加噪：训练中不需要真的循环加t次噪声，只需要一次就加到xt
     def q_sample(self, x_start, t, noise=None):
         noise = default(noise, lambda: torch.randn_like(x_start))
         return (
@@ -250,7 +251,9 @@ class Diffusion_TS(nn.Module):
             target = x_start
 
         x = self.q_sample(x_start=x_start, t=t, noise=noise)  # noise sample
-        model_out = self.output(x, t, padding_masks)
+        #model_out = self.output(x, t, padding_masks)
+        trend, season = self.model(x, t, padding_masks=padding_masks)
+        model_out = trend + season
 
         train_loss = self.loss_fn(model_out, target, reduction='none')
 
@@ -271,6 +274,7 @@ class Diffusion_TS(nn.Module):
         b, c, n, device, feature_size, = *x.shape, x.device, self.feature_size
         assert n == feature_size, f'number of variable must be {feature_size}'
         t = torch.randint(0, self.num_timesteps, (b,), device=device).long()
+        #同一个 batch 里，不同样本会被加到不同强度的噪声，再统一送进模型训练。
         return self._train_loss(x_start=x, t=t, **kwargs)
 
     def return_components(self, x, t: int):

@@ -418,8 +418,9 @@ class Transformer(nn.Module):
         self.decoder = Decoder(n_channel, n_feat, n_embd, n_heads, n_layer_dec, attn_pdrop, resid_pdrop, mlp_hidden_times,
                                block_activate, condition_dim=n_embd)
         self.pos_dec = LearnablePositionalEncoding(n_embd, dropout=resid_pdrop, max_len=max_len)
-
+    #输入xt(batch_size,seq,feature_size)和t
     def forward(self, input, t, padding_masks=None, return_res=False):
+        #Conv 1*1
         emb = self.emb(input)
         inp_enc = self.pos_enc(emb)
         enc_cond = self.encoder(inp_enc, t, padding_masks=padding_masks)

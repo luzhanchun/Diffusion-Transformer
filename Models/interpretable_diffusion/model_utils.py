@@ -211,7 +211,7 @@ class series_decomp_multi(nn.Module):
 
 
 class Transpose(nn.Module):
-    """ Wrapper class of torch.transpose() for Sequential module. """
+    """ 这是一个对 torch.transpose() 的封装，目的是为了能在 Sequential 模块中使用。. """
     def __init__(self, shape: tuple):
         super(Transpose, self).__init__()
         self.shape = shape
