@@ -114,7 +114,7 @@ def main(args,seed):
         dataset = dataloader_info['dataset']
         #采样trainer.sample(num=17397,size_every=2001,shape=[24,7])  size_every:扩散模型一次生成 size_every 条样本
         #返回值#samples.shape=(num_cycle*size_every=18009, 24,7)
-        samples = trainer.sample(num_cycles=args.num_cycles, size_every=args.size_every, shape=[dataset.window, dataset.var_num])
+        samples = trainer.sample(num_cycles=args.num_cycles, batch_size=args.size_every, shape=[dataset.window, dataset.var_num])
         if dataset.auto_norm:
             #从-1~1变换到0-1
             samples = unnormalize_to_zero_to_one(samples)

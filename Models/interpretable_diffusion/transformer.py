@@ -325,10 +325,17 @@ class DecoderBlock(nn.Module):
         x = x + a
         a, att = self.attn2(self.ln1_1(x, timestep), encoder_output, mask=mask)
         x = x + a
+        #Conv1d将(B,L,n_embd)变成(B,2L,n_embd)，然后沿dim=1一分为二
+        #这一步本质是在构造两路特征：一路给 trend block，一路给 season block
         x1, x2 = self.proj(x).chunk(2, dim=1)
+        #TrendBlock 的作用是用低阶多项式基拟合趋势。输出(B,L,n_feat)回到原始特征维度
+        #Decoder 中用的是 FourierLayer，输出(B,L,n_embd)仍在embedding 维度空间
         trend, season = self.trend(x1), self.seasonal(x2)
         x = x + self.mlp(self.ln2(x))
+        #m.shape=(B,1,n_embd) 在x的第一维上做平均
         m = torch.mean(x, dim=1, keepdim=True)
+        #self.linear(m).shape=(B,1,n_feat)
+        #每层都产出一个全局平均分量residual_mean,即m
         return x - m, self.linear(m), trend, season
     
 
@@ -373,7 +380,7 @@ class Decoder(nn.Module):
             season += residual_season
             trend += residual_trend
             mean.append(residual_mean)
-
+        #mean.shape=(B,n_layer_dec, n_feat)
         mean = torch.cat(mean, dim=1)
         return x, mean, trend, season
 
@@ -420,19 +427,24 @@ class Transformer(nn.Module):
         self.pos_dec = LearnablePositionalEncoding(n_embd, dropout=resid_pdrop, max_len=max_len)
     #输入xt(batch_size,seq,feature_size)和t
     def forward(self, input, t, padding_masks=None, return_res=False):
-        #Conv 1*1
+        #Conv 1*1 先把原始特征映射到 embedding 空间,得到的是每个时间步的高维表示(B,L,n_embd)
         emb = self.emb(input)
+        #添加位置编码--输入encoder
         inp_enc = self.pos_enc(emb)
+        #对输入序列的全局上下文进行建模，供 decoder cross-attention 使用。输出形状(B,L,n_embd)
         enc_cond = self.encoder(inp_enc, t, padding_masks=padding_masks)
-
+        #添加位置编码--输入decoder
         inp_dec = self.pos_dec(emb)
         output, mean, trend, season = self.decoder(inp_dec, t, enc_cond, padding_masks=padding_masks)
-
+        #decoder 剩余表示投影回原始特征维度后的结果 (B,L,n_embd)变成(B,L,n_feat)
         res = self.inverse(output)
+        #(B,1,n_feat)
         res_m = torch.mean(res, dim=1, keepdim=True)
+        #通过combine_s做卷积将season回到原始特征维度，作为纯粹季节项
+        #res-res_m是去掉时间均值后的残差项
         season_error = self.combine_s(season.transpose(1, 2)).transpose(1, 2) + res - res_m
+        #trend也不是单一来源，而是多个“低频 / 均值 / 趋势”分量的和
         trend = self.combine_m(mean) + res_m + trend
-
         if return_res:
             return trend, self.combine_s(season.transpose(1, 2)).transpose(1, 2), res - res_m
 

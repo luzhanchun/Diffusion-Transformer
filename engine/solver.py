@@ -45,6 +45,7 @@ class Trainer(object):
 
         self.opt = Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=start_lr, betas=[0.9, 0.96])
         # 指数移动平均（Exponential Moving Average, EMA）稳定训练
+        #beta:EMA 衰减系数（越大 → 越平滑），update_every:每多少 step 更新一次 EMA
         self.ema = EMA(self.model, beta=ema_decay, update_every=ema_update_every).to(self.device)
 
         sc_cfg = config['solver']['scheduler']
@@ -101,25 +102,32 @@ class Trainer(object):
         if self.logger is not None:
             tic = time.time()
             self.logger.log_info('{}: start training...'.format(self.args.name), check_primary=False)
-
+        #self.train_num_steps==max_epochs
         with tqdm(initial=step, total=self.train_num_steps) as pbar:
+            #训练不是按“epoch”控制，而是按总训练步数 train_steps 控制,一个循环完成一次参数更新step
             while step < self.train_num_steps:
                 total_loss = 0.
+                #梯度累积：是在显存装不下大 batch 时，近似实现更大的有效 batch size。
                 for _ in range(self.gradient_accumulate_every):
                     data = next(self.dl).to(device)
                     loss = self.model(data, target=data)
+                    #因为你是把多个 mini-batch 的梯度加起来，如果不除以 accum_steps，最终梯度会放大 accum_steps 倍，相当于偷偷把学习率也放大了。
                     loss = loss / self.gradient_accumulate_every
                     loss.backward()
                     total_loss += loss.item()
 
                 pbar.set_description(f'loss: {total_loss:.6f}')
-
+                #梯度裁剪
                 clip_grad_norm_(self.model.parameters(), 1.0)
+                #优化器更新
                 self.opt.step()
+                #学习率调度器更新
                 self.sch.step(total_loss)
+                #清空梯度
                 self.opt.zero_grad()
                 self.step += 1
                 step += 1
+                #更新ema模型参数
                 self.ema.update()
 
                 with torch.no_grad():
@@ -127,7 +135,7 @@ class Trainer(object):
                         self.milestone += 1
                         self.save(self.milestone)
                         # self.logger.log_info('saved in {}'.format(str(self.results_folder / f'checkpoint-{self.milestone}.pt')))
-                    
+                    #每隔 log_frequency 步，记录一次训练损失到 logger（大概率是 TensorBoard）
                     if self.logger is not None and self.step % self.log_frequency == 0:
                         # info = '{}: train'.format(self.args.name)
                         # info = info + ': Epoch {}/{}'.format(self.step, self.train_num_steps)
@@ -137,25 +145,28 @@ class Trainer(object):
                         # info += ' | Total Loss: {:.6f}'.format(total_loss)
                         # self.logger.log_info(info)
                         self.logger.add_scalar(tag='train/loss', scalar_value=total_loss, global_step=self.step)
-
+                #每进行一次参数更新，进度条前进1
                 pbar.update(1)
 
         print('training complete')
         if self.logger is not None:
             self.logger.log_info('Training done, time: {:.2f}'.format(time.time() - tic))
 
-    # 采样trainer.sample(num=17397,size_every=2001,shape=[24,7])
-    def sample(self, num_cycles, size_every, shape=None, model_kwargs=None, cond_fn=None):
+
+    def sample(self, num_cycles, batch_size, shape=None, model_kwargs=None, cond_fn=None):
         if self.logger is not None:
             tic = time.time()
             self.logger.log_info('[WORK] 扩散模型采样中...')
+        #初始化一个空数组
         samples = np.empty([0, shape[0], shape[1]])
         #9=17397/2001+1
         #num_cycle = int(num // size_every) + 1
 
         for _ in range(num_cycles):
             #self.ema.ema_model表示使用EMA权重的模型,生成多变量时间序列（multivariate time series, MTS)
-            sample = self.ema.ema_model.generate_mts(batch_size=size_every, model_kwargs=model_kwargs, cond_fn=cond_fn)
+            #(batch_size, seq_len, dim)
+            sample = self.ema.ema_model.generate_mts(batch_size=batch_size, model_kwargs=model_kwargs, cond_fn=cond_fn)
+            #把sample拼到samples后面
             samples = np.row_stack([samples, sample.detach().cpu().numpy()])
             torch.cuda.empty_cache()
 

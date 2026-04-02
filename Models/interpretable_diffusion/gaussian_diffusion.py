@@ -51,7 +51,9 @@ class Diffusion_TS(nn.Module):
             resid_pd=0.,
             kernel_size=None,
             padding_size=None,
+            #是否使用快速傅立叶变换（Fast Fourier Transform）加入频域损失
             use_ff=True,
+            #频域损失权重
             reg_weight=None,
             **kwargs
     ):
@@ -65,7 +67,7 @@ class Diffusion_TS(nn.Module):
         self.model = Transformer(n_feat=feature_size, n_channel=seq_length, n_layer_enc=n_layer_enc, n_layer_dec=n_layer_dec,
                                  n_heads=n_heads, attn_pdrop=attn_pd, resid_pdrop=resid_pd, mlp_hidden_times=mlp_hidden_times,
                                  max_len=seq_length, n_embd=d_model, conv_params=[kernel_size, padding_size], **kwargs)
-
+        #betas 是一个长度为timesteps的一维向量：表示在前向扩散第t步加入的噪声强度
         if beta_schedule == 'linear':
             betas = linear_beta_schedule(timesteps)
         elif beta_schedule == 'cosine':
@@ -134,7 +136,7 @@ class Diffusion_TS(nn.Module):
             extract(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t -
             extract(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape) * noise
         )
-
+    #扩散模型的标准高斯后验公式
     def q_posterior(self, x_start, x_t, t):
         posterior_mean = (
                 extract(self.posterior_mean_coef1, t, x_t.shape) * x_start +
@@ -148,25 +150,29 @@ class Diffusion_TS(nn.Module):
         trend, season = self.model(x, t, padding_masks=padding_masks)
         model_output = trend + season
         return model_output
-
+    #用模型预测当前样本对应的干净序列x_0
     def model_predictions(self, x, t, clip_x_start=False, padding_masks=None):
         if padding_masks is None:
             padding_masks = torch.ones(x.shape[0], self.seq_length, dtype=bool, device=x.device)
 
         maybe_clip = partial(torch.clamp, min=-1., max=1.) if clip_x_start else identity
-        x_start = self.output(x, t, padding_masks)
+        trend, season = self.model(x, t, padding_masks)
+        x_start = trend + season
         x_start = maybe_clip(x_start)
         pred_noise = self.predict_noise_from_start(x, t, x_start)
         return pred_noise, x_start
-
+    #x_t和x_0计算标准高斯后验分布，也就是x_t-1的分布
     def p_mean_variance(self, x, t, clip_denoised=True):
+        #模型预测X_0
         _, x_start = self.model_predictions(x, t)
+        #把X_0限制在-1~1之间
         if clip_denoised:
             x_start.clamp_(-1., 1.)
+        ##x_t和x_0计算标准高斯后验分布，也就是x_t-1的分布。也就是算出反向后验均值方差
         model_mean, posterior_variance, posterior_log_variance = \
             self.q_posterior(x_start=x_start, x_t=x, t=t)
         return model_mean, posterior_variance, posterior_log_variance, x_start
-    
+    #一个时间步的采样
     def p_sample(self, x, t: int, clip_denoised=True, cond_fn=None, model_kwargs=None):
         b, *_, device = *x.shape, self.betas.device
         batched_times = torch.full((x.shape[0],), t, device=x.device, dtype=torch.long)
@@ -177,16 +183,21 @@ class Diffusion_TS(nn.Module):
             model_mean = self.condition_mean(
                 cond_fn, model_mean, model_log_variance, x, t=batched_times, model_kwargs=model_kwargs
             )
+        #从这个高斯后验分布采样出下一步X_t-1
         pred_series = model_mean + (0.5 * model_log_variance).exp() * noise
         return pred_series, x_start
 
     @torch.no_grad()
     def sample(self, shape):
         device = self.betas.device
+        #纯高斯噪声x_t
         img = torch.randn(shape, device=device)
+        #t=499,498,497,```2,1,0
         for t in tqdm(reversed(range(0, self.num_timesteps)),
                       desc='[WORK] sampling loop time step', total=self.num_timesteps):
+            #每一步把当前的x_t变成x_t-1
             img, _ = self.p_sample(img, t)
+        #返回生成结果x_0
         return img
 
     @torch.no_grad()
@@ -219,7 +230,7 @@ class Diffusion_TS(nn.Module):
                   sigma * noise
 
         return img
-    
+    #模型推理采样的真正入口函数
     def generate_mts(self, batch_size=16, model_kwargs=None, cond_fn=None):
         feature_size, seq_length = self.feature_size, self.seq_length
         if cond_fn is not None:
@@ -244,19 +255,20 @@ class Diffusion_TS(nn.Module):
                 extract(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start +
                 extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * noise
         )
-
+    #训练损失
     def _train_loss(self, x_start, t, target=None, noise=None, padding_masks=None):
         noise = default(noise, lambda: torch.randn_like(x_start))
         if target is None:
             target = x_start
-
+        #前向加噪
         x = self.q_sample(x_start=x_start, t=t, noise=noise)  # noise sample
         #model_out = self.output(x, t, padding_masks)
+        #模型预测X0
         trend, season = self.model(x, t, padding_masks=padding_masks)
         model_out = trend + season
-
+        #时域损失
         train_loss = self.loss_fn(model_out, target, reduction='none')
-
+        #快速傅里叶变换频域损失
         fourier_loss = torch.tensor([0.])
         if self.use_ff:
             fft1 = torch.fft.fft(model_out.transpose(1, 2), norm='forward')
@@ -265,9 +277,13 @@ class Diffusion_TS(nn.Module):
             fourier_loss = self.loss_fn(torch.real(fft1), torch.real(fft2), reduction='none')\
                            + self.loss_fn(torch.imag(fft1), torch.imag(fft2), reduction='none')
             train_loss +=  self.ff_weight * fourier_loss
-        
+        #所有维度平均成每个样本一个标量，如果原来 train_loss.shape = [B, L, D]，这里之后就变成：[B,1]
+        #保留Batch维b,其余所有维度展平后求均值
         train_loss = reduce(train_loss, 'b ... -> b (...)', 'mean')
+        #按时间步𝑡做重加权：在小t时被降低权重，以迫使网络专注于更大的扩散步骤。
+        #不想让所有时间步“裸平均”，而是用一个随扩散系数变化的权重去平衡。
         train_loss = train_loss * extract(self.loss_weight, t, train_loss.shape)
+        #对 batch 求平均
         return train_loss.mean()
 
     def forward(self, x, **kwargs):

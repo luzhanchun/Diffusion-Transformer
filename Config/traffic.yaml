@@ -6,8 +6,11 @@ model:
     n_layer_enc: 3
     n_layer_dec: 2
     d_model: 64  # 4 X 16
+    #训练时的扩散步数
     timesteps: 500
+    #采样时的扩散步数，必须小于等于训练时的扩散步数，如果小于就是快速采样
     sampling_timesteps: 500
+    #时域损失函数类型
     loss_type: 'l1'
     beta_schedule: 'cosine'
     n_heads: 4
@@ -19,14 +22,18 @@ model:
 
 solver:
   base_lr: 1.0e-5
+  #模型更新参数的次数
   max_epochs: 18000
   results_folder: ./Checkpoints_traffic
+  #梯度累积，累积2个mini_batch
   gradient_accumulate_every: 2
+  #模型更新1800次参数保存一次模型checkpoint
   save_cycle: 1800  # max_epochs // 10
+  #ema模型参数
   ema:
     decay: 0.995
     update_interval: 10
-  
+  #学习率调度器
   scheduler:
     target: engine.lr_sch.ReduceLROnPlateauWithWarmup
     params:
