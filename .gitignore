@@ -6,6 +6,7 @@ __pycache__/
 # C extensions
 *.so
 OUTPUT/pcap
+OUTPUT/traffic_1/samples
 # Distribution / packaging
 .Python
 build/
