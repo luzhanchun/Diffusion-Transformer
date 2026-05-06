@@ -58,11 +58,12 @@ class StartSyn:
         # print(f"[CLIENT] actual start ms = {actual_ms}, diff = {actual_ms - start_time_ms} ms")
         self.work()
     def server(self):
+        listen_IP = "0.0.0.0"
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            s.bind((self.Server_IP, self.Server_PORT))
+            s.bind((listen_IP, self.Server_PORT))
             s.listen(5)
-            print(f"[INFO] 等待系统启动命令(listening on {self.Server_IP}:{self.Server_PORT})······")
+            print(f"[INFO] 等待系统启动命令(listening on {listen_IP}:{self.Server_PORT})······")
 
             while not self.start_event.is_set():
                 conn, addr = s.accept()

@@ -10,9 +10,9 @@ from engine.traffic_generator import TrafficGenerator
 def parse_args():
     parser = argparse.ArgumentParser(description="Scapy custom TCP/TLS peer node")
     parser.add_argument('--iface', type=str, default=None, help='网卡名，例如 eth0 / ens33')
-    parser.add_argument('--c_ip', type=str, default="192.168.159.1", help='客户端ip')
+    parser.add_argument('--c_ip', type=str, default="192.168.31.230", help='客户端ip')
     parser.add_argument('--c_port', type=int, default=12345, help='客户端-端口')
-    parser.add_argument('--s_ip', type=str, default="192.168.159.128", help='服务端ip')
+    parser.add_argument('--s_ip', type=str, default="192.168.31.76", help='服务端ip')
     parser.add_argument('--s_port', type=int, default=443, help='服务端端口')
     parser.add_argument("--host_type", type=str, default="c", help='指示本机类型c/s')
     parser.add_argument('--sample', action='store_true', default=False, help='是否同时启动模型采样.')
