@@ -37,7 +37,8 @@ class StartSyn:
         print("[INFO] 发送系统启动命令······")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
-                s.connect((self.Server_IP, self.Server_PORT))
+                s.bind((self.Client_IP, 50000))
+                s.connect((self.Server_IP, 50000))
             except ConnectionRefusedError:
                 print("[INFO] 目标主机程序未启动")
                 os._exit(1)
@@ -59,16 +60,17 @@ class StartSyn:
         self.work()
     def server(self):
         listen_IP = "0.0.0.0"
+        listen_Port = 50000
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            s.bind((listen_IP, self.Server_PORT))
+            s.bind((listen_IP, listen_Port))
             s.listen(5)
-            print(f"[INFO] 等待系统启动命令(listening on {listen_IP}:{self.Server_PORT})······")
+            print(f"[INFO] 等待系统启动命令(listening on {listen_IP}:{listen_Port})······")
 
             while not self.start_event.is_set():
                 conn, addr = s.accept()
                 client_ip, client_port = addr
-                if client_ip == self.Client_IP:
+                if client_ip == self.Client_IP and client_port == 50000:
                     self.handle(conn, addr)
                 else:
                     conn.close()
