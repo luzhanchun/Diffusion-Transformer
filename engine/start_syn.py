@@ -37,7 +37,7 @@ class StartSyn:
         print("[INFO] 发送系统启动命令······")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
-                s.bind((self.Client_IP, 50000))
+                s.bind(("0.0.0.0", 50000))
                 s.connect((self.Server_IP, 50000))
             except ConnectionRefusedError:
                 print("[INFO] 目标主机程序未启动")

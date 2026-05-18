@@ -29,4 +29,4 @@ EXPOSE 50000
 #ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "diff-ts", "python", "generator.py"]
 ENTRYPOINT ["/opt/conda/envs/diff-ts/bin/python", "generator.py"]
 #默认参数或命令
-CMD ["--host_type", "s", "--send", "--syn", "--count", "100"]
+CMD ["--host_type", "c", "--send", "--syn"]
