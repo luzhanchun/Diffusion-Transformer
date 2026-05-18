@@ -13,7 +13,7 @@ import numpy as np
 
 
 def load_yaml_config(path):
-    with open(path) as f:
+    with open(path, 'r', encoding='utf-8') as f:
         config = yaml.full_load(f)
     return config
 
@@ -24,7 +24,7 @@ def save_config_to_yaml(config, path):
         f.close()
 
 def save_dict_to_json(d, path, indent=None):
-    json.dump(d, open(path, 'w'), indent=indent)
+    json.dump(d, open(path, 'w', encoding='utf-8'), indent=indent)
 
 def load_dict_from_json(path):
     return json.load(open(path, 'r'))
